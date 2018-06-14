@@ -1,10 +1,12 @@
-import gpflow
-import tensorflow as tf
 import numpy as np
+import tensorflow as tf
+import gpflow
+
 from .mgpr import MGPR
 from .smgpr import SMGPR
 from .. import controllers
 from .. import rewards
+
 float_type = gpflow.settings.dtypes.float_type
 
 

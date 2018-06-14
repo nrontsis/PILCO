@@ -1,7 +1,8 @@
-import gym
-from ..models.pilco import PILCO
 import numpy as np
+import gym
 import time
+from pilco.models import PILCO
+
 env = gym.make('InvertedPendulum-v2')
 
 np.random.seed(0)

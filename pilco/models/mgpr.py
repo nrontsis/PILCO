@@ -1,7 +1,5 @@
-from gpflow import transforms
-import gpflow
 import tensorflow as tf
-import numpy as np
+import gpflow
 float_type = gpflow.settings.dtypes.float_type
 
 

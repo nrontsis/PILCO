@@ -1,8 +1,8 @@
-from gpflow import Parameterized
+import abc
 import tensorflow as tf
+from gpflow import Parameterized
 from gpflow import settings
 float_type = settings.dtypes.float_type
-import abc
 
 
 class Reward(Parameterized):
@@ -12,6 +12,7 @@ class Reward(Parameterized):
     @abc.abstractmethod
     def compute_reward(self, m, s):
         raise NotImplementedError()
+
 
 class ExponentialReward(Reward):
     def __init__(self, state_dim, W=None, t=None):
