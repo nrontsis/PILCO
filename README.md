@@ -1,5 +1,6 @@
 # Probabilistic Inference for Learning Control
 [![Build Status](https://travis-ci.org/nrontsis/PILCO.svg?branch=master)](https://travis-ci.org/nrontsis/PILCO)
+[![codecov](https://codecov.io/gh/nrontsis/PILCO/branch/master/graph/badge.svg)](https://codecov.io/gh/nrontsis/PILCO)
 
 This is a `TensorFlow` implementation of the [PILCO](https://ieeexplore.ieee.org/abstract/document/6654139/) Reinforcement Learning Algorithm. PILCO's [original implementation](http://mlg.eng.cam.ac.uk/pilco/) is in `MATLAB`. This repository aims to provide a modern \& significantly cleaner implementation.
 
