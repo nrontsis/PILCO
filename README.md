@@ -1,4 +1,6 @@
 # Probabilistic Inference for Learning Control
+[![Build Status](https://travis-ci.com/nrontsis/PILCO.svg?branch=master)](https://travis-ci.com/nrontsis/PILCO)
+
 This is a `TensorFlow` implementation of the [PILCO](https://ieeexplore.ieee.org/abstract/document/6654139/) Reinforcement Learning Algorithm. PILCO's [original implementation](http://mlg.eng.cam.ac.uk/pilco/) is in `MATLAB`. This repository aims to provide a modern \& significantly cleaner implementation.
 
 By using `TensorFlow` we are able to greatly simplify the code, avoiding the need for hardcoded gradients. At the same time, we avoid re-implementing Gaussian Process Regression but instead rely on the [`GPflow`](https://github.com/GPflow/GPflow) library.

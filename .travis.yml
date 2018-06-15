@@ -4,5 +4,6 @@ before_install:
   - sudo apt-get install octave
 install:
   - pip install -r requirements.txt
+  - pip install oct2py
 script:
   - pytest
