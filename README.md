@@ -6,7 +6,18 @@ By using `TensorFlow` we are able to greatly simplify the code, avoiding the nee
 The core functionality is tested against the MATLAB implementation. Tests can be invoked via `pytest`.
 
 A minimal example of using PILCO in [`OpenAI gym`](https://gym.openai.com) can be found in `examples/inverted_pendulum.py`. You can run it with:
-
 ```
 python -m PILCO.examples.inverted_pendulum.py
 ```
+
+Original References
+
+M.P. Deisenroth and C.E. Rasmussen: PILCO: A Data-Efficient and Model-based Approach to Policy Search (ICML 2011) 
+
+and
+
+M.P. Deisenroth: Efficient Reinforcement Learning Using Gaussian Processes (KIT Scientific Publishing, 2010)
+
+Authors 
+
+Nikitas Rontsis, Kyriakos Polymenakos
