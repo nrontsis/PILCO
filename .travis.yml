@@ -6,4 +6,5 @@ install:
   - pip install -r requirements.txt
   - pip install oct2py
 script:
-  - pytest
+  - pytest -W --cov=./
+  - codecov --token=745851ac-d7de-48ae-b84c-22240114e57a
