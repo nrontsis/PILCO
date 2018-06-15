@@ -5,7 +5,7 @@ from gpflow import autoflow
 from gpflow import settings
 import oct2py
 octave = oct2py.Oct2Py()
-dir_path = os.path.dirname(os.path.realpath("__file__")) + "/tests"
+dir_path = os.path.dirname(os.path.realpath("__file__")) + "/tests/Matlab Code"
 octave.addpath(dir_path)
 
 float_type = settings.dtypes.float_type
