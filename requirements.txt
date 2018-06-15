@@ -1,3 +1,3 @@
 numpy
 tensorflow
--e git://github.com/GPFlow/GPflow.git
+git+git://github.com/GPflow/GPflow.git
