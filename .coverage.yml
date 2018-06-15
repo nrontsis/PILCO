@@ -1,9 +1,1 @@
-language: python
-python: 3.6
-before_install:
-  - sudo apt-get install octave
-install:
-  - pip install -r requirements.txt
-  - pip install oct2py
-script:
-  - pytest
+service_name: travis-ci
