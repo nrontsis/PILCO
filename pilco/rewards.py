@@ -1,7 +1,8 @@
 import abc
 import tensorflow as tf
-from gpflow import Parameterized
-from gpflow import settings
+from gpflow import Parameterized, Param, params_as_tensors, settings
+import numpy as np
+
 float_type = settings.dtypes.float_type
 
 
@@ -15,18 +16,13 @@ class Reward(Parameterized):
 
 
 class ExponentialReward(Reward):
-    def __init__(self, state_dim, W=None, t=None):
+    def __init__(self, state_dim):
         Reward.__init__(self)
         self.state_dim = state_dim
-        if W is None:
-            self.W = tf.cast(tf.diag(tf.ones(self.state_dim)), float_type)
-        else:
-            self.W = tf.convert_to_tensor(W, dtype=float_type)
-        if t is None:
-            self.t = tf.zeros([1, self.state_dim], dtype=float_type)
-        else:
-            self.t = tf.convert_to_tensor(t, dtype=float_type)
+        self.W = Param(np.random.rand(state_dim, state_dim), trainable=False)
+        self.t = Param(np.random.rand(1, state_dim), trainable=False)
 
+    @params_as_tensors
     def compute_reward(self, m, s):
         '''
         Reward function, calculating mean and variance of rewards, given

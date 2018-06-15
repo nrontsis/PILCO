@@ -18,7 +18,7 @@ def predict_wrapper(smgpr, m, s):
 def get_induced_points(smgpr):
     return smgpr.Z
 
-def test_predictions():
+def test_sparse_predictions():
     np.random.seed(0)
     d = 3  # Input dimension
     k = 2  # Number of outputs
@@ -55,7 +55,7 @@ def test_predictions():
     gpmodel.targets = Y0
     gpmodel.induce = get_induced_points(smgpr)
 
-    # Call gp0 in octave
+    # Call function in octave
     M_mat, S_mat, V_mat = octave.gp1(gpmodel, m.T, s, nout=3)
 
     assert M.shape == M_mat.T.shape
@@ -67,4 +67,4 @@ def test_predictions():
 
 
 if __name__ == '__main__':
-    test_predictions()
+    test_sparse_predictions()

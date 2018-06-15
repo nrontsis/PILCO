@@ -57,7 +57,7 @@ def test_predictions():
     gpmodel.inputs = X0
     gpmodel.targets = Y0
 
-    # Call gp0 in octave
+    # Call function in octave
     M_mat, S_mat, V_mat = octave.gp0(gpmodel, m.T, s, nout=3)
 
     assert M.shape == M_mat.T.shape

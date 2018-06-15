@@ -6,11 +6,10 @@ from .models import MGPR
 
 
 class LinearController(gpflow.Parameterized):
-    def __init__(self, state_dim, control_dim):
+    def __init__(self, state_dim, control_dim, W=None, b=None):
         gpflow.Parameterized.__init__(self)
-        self.W = gpflow.Param(np.zeros((control_dim, state_dim)))
-        self.t = gpflow.Param(np.zeros((1, state_dim)))
-        self.b = gpflow.Param(np.zeros((1, control_dim)))
+        self.W = gpflow.Param(np.random.rand(control_dim, state_dim))
+        self.b = gpflow.Param(np.random.rand(1, control_dim))
 
     @gpflow.params_as_tensors
     def compute_action(self, m, s):
@@ -19,15 +18,15 @@ class LinearController(gpflow.Parameterized):
         IN: mean (m) and variance (s) of the state
         OUT: mean (M) and variance (S) of the action
         '''
-        M = (m-self.t) @ tf.transpose(self.W) - self.b # mean output
+        M = m @ tf.transpose(self.W) + self.b # mean output
         S = self.W @ s @ tf.transpose(self.W) # output variance
         V = tf.transpose(self.W) #input output covariance
         return M, S, V
 
 
 class RBF_Controller(MGPR):
-    def __init__(self):
-        MGPR.__init__(self)
+    def __init__(self, points, values):
+        MGPR.__init__(self, points, values)
         for model in self.models:
             model.kern.variance = 1.0
             model.kern.variance.trainable = False
