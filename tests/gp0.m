@@ -33,15 +33,9 @@
 % # Compute predictive covariance matrix, non-central moments
 % # Centralize moments
 
-% function [M, S, V] = gp0(gpmodel, m, s)
-%%% Changed inputs to avoid the struct as they are a pain to be set up from python
-function [M, S, V] = gp0(hyp, inputs, targets, m, s)
-gpmodel.hyp = hyp;
-gpmodel.inputs = inputs;
-gpmodel.targets = targets;
-%%%
-
+function [M, S, V] = gp0(gpmodel, m, s)
 %% Code
+
 persistent K iK beta oldX oldn;
 [n, D] = size(gpmodel.inputs);    % number of examples and dimension of inputs
 [n, E] = size(gpmodel.targets);     % number of examples and number of outputs
@@ -90,13 +84,11 @@ for i=1:E
   ii = bsxfun(@rdivide,inp,exp(2*X(1:D,i)'));
   
   for j=1:i
-    % I guess these are inverse lengthscales?
     R = s*diag(exp(-2*X(1:D,i))+exp(-2*X(1:D,j)))+eye(D); 
     t = 1/sqrt(det(R));
     ij = bsxfun(@rdivide,inp,exp(2*X(1:D,j)'));
     L = exp(bsxfun(@plus,k(:,i),k(:,j)')+maha(ii,-ij,R\s/2));
     if i==j
-      % Careful t is a scalar we need to use tf.multiply
       S(i,i) = t*(beta(:,i)'*L*beta(:,i) - sum(sum(iK(:,:,i).*L)));
     else
       S(i,j) = beta(:,i)'*L*beta(:,j)*t; 
@@ -104,7 +96,6 @@ for i=1:E
     end  
   end
   
-  % This just adds the variances to the diagonal of S
   S(i,i) = S(i,i) + exp(2*X(D+1,i));
 end
 
