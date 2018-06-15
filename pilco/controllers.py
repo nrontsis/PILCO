@@ -1,7 +1,9 @@
 import tensorflow as tf
 import numpy as np
 import gpflow
-from .models.mgpr import MGPR
+
+from .models import MGPR
+
 
 class LinearController(gpflow.Parameterized):
     def __init__(self, state_dim, control_dim):

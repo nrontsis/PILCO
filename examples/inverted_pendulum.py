@@ -1,6 +1,6 @@
-import gym
-from ..models.pilco import PILCO
 import numpy as np
+import gym
+from pilco.models import PILCO
 np.random.seed(0)
 
 env = gym.make('InvertedPendulum-v2')

@@ -1,4 +1,4 @@
-from model.mgpr import MGPR
+from pilco.models import MGPR
 import numpy as np
 import matlab.engine
 import os
