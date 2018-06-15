@@ -2,25 +2,33 @@
 [![Build Status](https://travis-ci.org/nrontsis/PILCO.svg?branch=master)](https://travis-ci.org/nrontsis/PILCO)
 [![codecov](https://codecov.io/gh/nrontsis/PILCO/branch/master/graph/badge.svg)](https://codecov.io/gh/nrontsis/PILCO)
 
-This is a `TensorFlow` implementation of the [PILCO](https://ieeexplore.ieee.org/abstract/document/6654139/) Reinforcement Learning Algorithm. PILCO's [original implementation](http://mlg.eng.cam.ac.uk/pilco/) is in `MATLAB`. This repository aims to provide a modern \& significantly cleaner implementation.
+A modern \& clean implementation of the [PILCO](https://ieeexplore.ieee.org/abstract/document/6654139/) Algorithm in `TensorFlow`.
 
-By using `TensorFlow` we are able to greatly simplify the code, avoiding the need for hardcoded gradients. At the same time, we avoid re-implementing Gaussian Process Regression but instead rely on the [`GPflow`](https://github.com/GPflow/GPflow) library.
+Unlike PILCO's [original implementation](http://mlg.eng.cam.ac.uk/pilco/) which was written as a self-contained package of `MATLAB`, this repository aims to provide a clean implementation by heavy use of modern machine learning libraries.
 
-The core functionality is tested against the MATLAB implementation. Tests can be invoked via `pytest`.
+In particular, we use `TensorFlow` to avoid the need for hardcoded gradients and scale to GPU architectures. Moreover, we use [`GPflow`](https://github.com/GPflow/GPflow) for Gaussian Process Regression.
 
-A minimal example of using PILCO in [`OpenAI gym`](https://gym.openai.com) can be found in `examples/inverted_pendulum.py`. You can run it with:
+The core functionality is tested against the original `MATLAB` implementation.
+
+## Example of usage
+First install the package by running:
 ```
-python -m PILCO.examples.inverted_pendulum.py
+python setup.py develop
 ```
 
-Original References
+Then you can run the example of using PILCO in [`OpenAI gym`](https://gym.openai.com) by running
+```
+python examples/inverted_pendulum.py
+```
 
-M.P. Deisenroth and C.E. Rasmussen: PILCO: A Data-Efficient and Model-based Approach to Policy Search (ICML 2011) 
 
-and
+## Credits:
 
-M.P. Deisenroth: Efficient Reinforcement Learning Using Gaussian Processes (KIT Scientific Publishing, 2010)
+The following people have been involved in the development of this package:
+* [Nikitas Rontsis](https://github.com/nrontsis)
+* Kyriakos Polymenakos
 
-Authors 
+## References
 
-Nikitas Rontsis, Kyriakos Polymenakos
+See the following publications for a description of the algorithm: [1](https://ieeexplore.ieee.org/abstract/document/6654139/), [2](http://mlg.eng.cam.ac.uk/pub/pdf/DeiRas11.pdf), 
+[3](https://pdfs.semanticscholar.org/c9f2/1b84149991f4d547b3f0f625f710750ad8d9.pdf)

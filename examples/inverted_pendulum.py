@@ -19,7 +19,6 @@ for rollouts in range(5):
         x = x_
 
 pilco = PILCO(np.stack(X), np.stack(Y))
-pilco.controller.t.trainable = False
 pilco.controller.b.trainable = False
 pilco.optimize()
 
