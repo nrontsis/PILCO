@@ -6,6 +6,6 @@ install:
   - pip install -r requirements.txt
   - pip install oct2py codecov pytest pytest-cov
 script:
-  - pytest --cov=./
+  - pytest -ss -q tests/test_cascade.py
 after_success:
   - codecov

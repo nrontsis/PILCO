@@ -5,7 +5,10 @@ import os
 from gpflow import autoflow
 from gpflow import settings
 import oct2py
-octave = oct2py.Oct2Py()
+import logging
+octave = oct2py.Oct2Py(logger=oct2py.get_log())
+octave.logger = oct2py.get_log('new_log')
+octave.logger.setLevel(logging.INFO)
 dir_path = os.path.dirname(os.path.realpath("__file__")) + "/tests/Matlab Code"
 octave.addpath(dir_path)
 
@@ -70,7 +73,7 @@ def test_cascade():
     plant.difi = np.arange(d) + 1
 
     # Call function in octave
-    M_mat, S_mat = octave.pred(policy, plant, dynmodel, m.T, s, horizon, nout=2)
+    M_mat, S_mat = octave.pred(policy, plant, dynmodel, m.T, s, horizon, nout=2, verbose=True)
     # Extract only last element of the horizon
     M_mat = M_mat[:,-1]
     S_mat = S_mat[:,:,-1]
