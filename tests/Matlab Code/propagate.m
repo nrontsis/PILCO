@@ -65,8 +65,8 @@ sn2 = exp(2*dynmodel.hyp(end,:)); sn2(difi) = sn2(difi)/2;
 % I disabled in order to have the tests passing.
 sn2 = 0*sn2;
 mm=zeros(D1,1); mm(i)=M(i); ss(i,i)=S(i,i)+diag(sn2);
-[mm(k), ss(k,k) C] = gTrig(mm(i), ss(i,i), angi);     % noisy state measurement
-q = ss(j,i)*C; ss(j,k) = q; ss(k,j) = q';
+% [mm(k), ss(k,k) C] = gTrig(mm(i), ss(i,i), angi);     % noisy state measurement
+% q = ss(j,i)*C; ss(j,k) = q; ss(k,j) = q';
 
 display(5)
 % 2) Compute distribution of the control signal -------------------------------
