@@ -26,6 +26,10 @@ class PILCO(gpflow.models.Model):
         if reward is None:
             self.reward = rewards.ExponentialReward(self.state_dim)
 
+        iK, beta = self.mgpr.get_factorizations()
+        self.iK = gpflow.DataHolder(iK)
+        self.beta = gpflow.DataHolder(beta)
+
     @gpflow.name_scope('likelihood')
     @gpflow.params_as_tensors
     def _build_likelihood(self):
@@ -48,6 +52,9 @@ class PILCO(gpflow.models.Model):
         end = time.time()
         print("GPs' optimization:", end - start, "seconds")
         start = time.time()
+        iK, beta = self.mgpr.get_factorizations()
+        self.iK = iK
+        self.beta = beta
         optimizer = gpflow.train.ScipyOptimizer()
         optimizer.minimize(self, maxiter=100, disp=True)
         end = time.time()
@@ -56,6 +63,17 @@ class PILCO(gpflow.models.Model):
     @gpflow.autoflow((float_type,[None, None]))
     def compute_action(self, x_m):
         return self.controller.compute_action(x_m, tf.zeros([self.state_dim, self.state_dim], float_type))[0]
+
+    @gpflow.autoflow((float_type,[None, None]), (float_type,[None, None]))
+    @gpflow.params_as_tensors
+    def predict_wrapper(self, m_x, s_x):
+        return self.predict(m_x, s_x, 30)
+
+    @gpflow.autoflow((float_type,[None, None]), (float_type,[None, None]))
+    @gpflow.params_as_tensors
+    def grad_predict_wrapper(self, m_x, s_x):
+        out = self.predict(m_x, s_x, 30)
+        return tf.gradients(out, [self.controller.W, self.controller.b])
 
     def predict(self, m_x, s_x, n):
         loop_vars = [
@@ -86,7 +104,9 @@ class PILCO(gpflow.models.Model):
         s2 = tf.concat([tf.transpose(s_x@c_xu), s_u], axis=1)
         s = tf.concat([s1, s2], axis=0)
 
-        M_dx, S_dx, C_dx = self.mgpr.predict_on_noisy_inputs(m, s)
+        # Comment/uncomment the following lines to see the difference 
+        # M_dx, S_dx, C_dx = self.mgpr.predict_on_noisy_inputs(m, s)
+        M_dx, S_dx, C_dx = self.mgpr.predict_given_factorizations(m, s, self.iK, self.beta)
         M_x = M_dx + m_x
         #TODO: cleanup the following line
         S_x = S_dx + s_x + s1@C_dx + tf.matmul(C_dx, s1, transpose_a=True, transpose_b=True)

@@ -45,6 +45,10 @@ class MGPR(gpflow.Parameterized):
         beta = tf.cholesky_solve(L, Y_)[:, :, 0]
         return iK, beta
 
+    @gpflow.autoflow()
+    def get_factorizations(self):
+        return self.calculate_factorizations()
+
     def predict_given_factorizations(self, m, s, iK, beta):
         """
         Approximate GP regression at noisy inputs via moment matching
