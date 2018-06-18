@@ -32,7 +32,7 @@
 
 function [Mnext, Snext] = propagate(m, s, plant, dynmodel, policy)
 %% Code
-
+display(3)
 % extract important indices from structures
 angi = plant.angi;  % angular indices
 poli = plant.poli;  % policy indices
@@ -49,6 +49,7 @@ M = zeros(D3,1); M(1:D0) = m; S = zeros(D3); S(1:D0,1:D0) = s;   % init M and S
 i = 1:D0; j = 1:D0; k = D0+1:D1;
 [M(k), S(k,k) C] = gTrig(M(i), S(i,i), angi);
 q = S(j,i)*C; S(j,k) = q; S(k,j) = q';
+display(4)
 
 sn2 = exp(2*dynmodel.hyp(end,:)); sn2(difi) = sn2(difi)/2;
 % Should we add noise? It's unclear to me.
@@ -58,12 +59,14 @@ mm=zeros(D1,1); mm(i)=M(i); ss(i,i)=S(i,i)+diag(sn2);
 [mm(k), ss(k,k) C] = gTrig(mm(i), ss(i,i), angi);     % noisy state measurement
 q = ss(j,i)*C; ss(j,k) = q; ss(k,j) = q';
 
+display(5)
 % 2) Compute distribution of the control signal -------------------------------
 i = poli; j = 1:D1; k = D1+1:D2;
 % Modified to avoid passing function handles
 [M(k) S(k,k) C] = conlin(policy, mm(i), ss(i,i));
 q = S(j,i)*C; S(j,k) = q; S(k,j) = q';
 
+display(6)
 % 3) Compute dynamics-GP prediction              ------------------------------
 ii = [dyni D1+1:D2]; j = 1:D2;
 if isfield(dynmodel,'sub'), Nf = length(dynmodel.sub); else Nf = 1; end
@@ -72,7 +75,9 @@ for n=1:Nf                               % potentially multiple dynamics models
   % [M(k), S(k,k), C] = dyn.fcn(dyn, M(i), S(i,i));
   % Modified to avoid passing function handles and calling sliceModel (we don't support submodels)
   dyn = dynmodel; k = D2+1:D3; i = ii;
+  display(7)
   [M(k), S(k,k), C] = gp0(dyn, M(i), S(i,i));
+  display(8)
   q = S(j,i)*C; S(j,k) = q; S(k,j) = q';
   
   j = [j k];                                   % update 'previous' state vector
