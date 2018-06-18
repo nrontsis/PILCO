@@ -38,16 +38,24 @@ angi = plant.angi;  % angular indices
 poli = plant.poli;  % policy indices
 dyni = plant.dyni;  % dynamics-model indices
 difi = plant.difi;  % state indices where the model was trained on differences
+display(angi)
+display(poli)
+display(dyni)
+display(difi)
+display(3.5)
 
 D0 = length(m);                                        % size of the input mean
 D1 = D0 + 2*length(angi);          % length after mapping all angles to sin/cos
 D2 = D1 + length(policy.maxU);          % length after computing control signal
 D3 = D2 + D0;                                         % length after predicting
 M = zeros(D3,1); M(1:D0) = m; S = zeros(D3); S(1:D0,1:D0) = s;   % init M and S
+display(3.6)
 
 % 1) Augment state distribution with trigonometric functions ------------------
 i = 1:D0; j = 1:D0; k = D0+1:D1;
+display(3.7)
 [M(k), S(k,k) C] = gTrig(M(i), S(i,i), angi);
+display(3.8)
 q = S(j,i)*C; S(j,k) = q; S(k,j) = q';
 display(4)
 
