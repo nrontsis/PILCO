@@ -36,8 +36,7 @@ def test_predictions():
 
     # Change the dataset and predict again. Just to make sure that we don't cache something we shouldn't.
     X0 = 5*np.random.rand(100, d)
-    for i in range(k):
-        mgpr.models[i].X = X0
+    mgpr.set_XY(X0, Y0) 
 
     M, S, V = predict_wrapper(mgpr, m, s)
 

@@ -11,7 +11,7 @@ float_type = gpflow.settings.dtypes.float_type
 
 
 class PILCO(gpflow.models.Model):
-    def __init__(self, X, Y, num_induced_points=None, horizon=10, controller=None, reward=None, name=None):
+    def __init__(self, X, Y, num_induced_points=None, horizon=30, controller=None, reward=None, name=None):
         super(PILCO, self).__init__(name)
         if not num_induced_points:
             self.mgpr = MGPR(X, Y)
@@ -49,7 +49,7 @@ class PILCO(gpflow.models.Model):
         print("GPs' optimization:", end - start, "seconds")
         start = time.time()
         optimizer = gpflow.train.ScipyOptimizer()
-        optimizer.minimize(self, maxiter=100)
+        optimizer.minimize(self, maxiter=100, disp=True)
         end = time.time()
         print("Controller's optimization:", end - start, "seconds")
 

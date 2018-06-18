@@ -21,6 +21,11 @@ class MGPR(gpflow.Parameterized):
             self.models.append(gpflow.models.GPR(X, Y[:, i:i+1], kern))
             self.models[i].clear(); self.models[i].compile()
 
+    def set_XY(self, X, Y):
+        for i in range(len(self.models)):
+            self.models[i].X = X
+            self.models[i].Y = Y[:, i:i+1]
+
     def optimize(self):
         optimizer = gpflow.train.ScipyOptimizer()
         for model in self.models:
@@ -32,7 +37,7 @@ class MGPR(gpflow.Parameterized):
     
     def calculate_factorizations(self):
         K = self.K(self.X)
-        batched_eye = tf.eye(self.num_datapoints, batch_shape=[self.num_outputs], dtype=float_type)
+        batched_eye = tf.eye(tf.shape(self.X)[0], batch_shape=[self.num_outputs], dtype=float_type)
         L = tf.cholesky(K + self.noise[:, None, None]*batched_eye)
         iK = tf.cholesky_solve(L, batched_eye)
         Y_ = tf.transpose(self.Y)[:, :, None]
