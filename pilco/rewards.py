@@ -53,4 +53,6 @@ class ExponentialReward(Reward):
                 tf.sqrt( tf.linalg.det(tf.eye(self.state_dim, dtype=float_type) + 2*SW) )
 
         sR = r2 - muR @ muR
+        muR.set_shape([1, 1])
+        sR.set_shape([1, 1])
         return muR, sR

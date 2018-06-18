@@ -11,7 +11,7 @@ float_type = gpflow.settings.dtypes.float_type
 
 
 class PILCO(gpflow.models.Model):
-    def __init__(self, X, Y, num_induced_points=None, controller=None, reward=None, name=None):
+    def __init__(self, X, Y, num_induced_points=None, horizon=10, controller=None, reward=None, name=None):
         super(PILCO, self).__init__(name)
         if not num_induced_points:
             self.mgpr = MGPR(X, Y)
@@ -19,6 +19,8 @@ class PILCO(gpflow.models.Model):
             self.mgpr = SMGPR(X, Y, num_induced_points)
         self.state_dim = Y.shape[1]
         self.control_dim = X.shape[1] - Y.shape[1]
+        self.horizon = horizon
+
         if controller is None:
             self.controller = controllers.LinearController(self.state_dim, self.control_dim)
         if reward is None:
@@ -33,7 +35,7 @@ class PILCO(gpflow.models.Model):
         m0 = np.zeros([1,self.state_dim])
         S0 = np.diag(np.ones(self.state_dim) * 0.01)
 
-        reward = self.predict(m0, S0, 10)[2]
+        reward = self.predict(m0, S0, self.horizon)[2]
         return reward
 
     def optimize(self):
