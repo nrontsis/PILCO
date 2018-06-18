@@ -12,7 +12,7 @@ class Reward(Parameterized):
 
     @abc.abstractmethod
     def compute_reward(self, m, s):
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 class ExponentialReward(Reward):

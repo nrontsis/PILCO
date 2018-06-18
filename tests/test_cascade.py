@@ -33,7 +33,7 @@ def test_cascade():
     A = np.random.rand(d + k, d)
     Y0 = np.sin(X0).dot(A) + 1e-3*(np.random.rand(100, d) - 0.5)  #  Just something smooth
     pilco = PILCO(X0, Y0)
-    # pilco.optimize()
+    pilco.optimize()
 
     # Generate input
     m = np.random.rand(1, d)  # But MATLAB defines it as m'
