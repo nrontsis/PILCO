@@ -46,9 +46,10 @@ D = size(gpmodel.inputs,2);    % number of examples and dimension of inputs
 input = gpmodel.inputs;  target = gpmodel.targets; X = gpmodel.hyp;
 
 % 1) if necessary: re-compute cached variables
-if numel(X) ~= numel(oldX) || isempty(iK) ||  n ~= oldn || ...
-    sum(any(X ~= oldX)) || sum(any(oldIn ~= input)) || ...
-    sum(any(oldOut ~= target))
+% if numel(X) ~= numel(oldX) || isempty(iK) ||  n ~= oldn || ...
+%     sum(any(X ~= oldX)) || sum(any(oldIn ~= input)) || ...
+%     sum(any(oldOut ~= target))
+if true
   oldX = X; oldIn = input; oldOut = target; oldn = n;
   K = zeros(n,n,E); iK = K; beta = zeros(n,E);
   

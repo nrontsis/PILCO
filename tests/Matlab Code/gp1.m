@@ -49,8 +49,9 @@ X = gpmodel.hyp; input = gpmodel.inputs; targets = gpmodel.targets;
 pinput = gpmodel.induce;                                   % all pseudo inputs
 
 % 1) If necessary: re-compute cached variables
-if numel(X) ~= numel(oldX) || isempty(iK) || isempty(iK2) || ... % if necessary
-              sum(any(X ~= oldX)) || numel(iK2) ~=E*np^2 || numel(iK) ~= n*np*E
+% if numel(X) ~= numel(oldX) || isempty(iK) || isempty(iK2) || ... % if necessary
+%              sum(any(X ~= oldX)) || numel(iK2) ~=E*np^2 || numel(iK) ~= n*np*E
+if true
   oldX = X;                                        % compute K, inv(K), inv(K2)
   iK = zeros(np,n,E); iK2 = zeros(np,np,E); beta = zeros(np,E);
     

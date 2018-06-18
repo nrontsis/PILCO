@@ -42,7 +42,8 @@ persistent K iK beta oldX oldn;
 X = gpmodel.hyp;                              % short hand for hyperparameters
 
 % 1) if necessary: re-compute cashed variables
-if numel(X) ~= numel(oldX) || isempty(iK) || sum(any(X ~= oldX)) || n ~= oldn
+%if numel(X) ~= numel(oldX) || isempty(iK) || sum(any(X ~= oldX)) || n ~= oldn
+if true
   oldX = X; oldn = n;                                               
   iK = zeros(n,n,E); K = zeros(n,n,E); beta = zeros(n,E);
   
