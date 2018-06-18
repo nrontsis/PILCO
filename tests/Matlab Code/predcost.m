@@ -31,7 +31,8 @@ L = zeros(size(m0,2),H); s = zeros(size(m0,2),H);
 for k = 1:size(m0,2);
   m = m0(:,k);
   for t = 1:H
-    [m, S] = plant.prop(m, S, plant, dynmodel, policy);	     % get next state
+    % Modified to avoid passing function handles
+    [m, S] = propagate(m, S, plant, dynmodel, policy);	     % get next state
     [L(k,t), d1, d2, v] = cost.fcn(cost, m, S);              % compute cost
     s(k,t) = sqrt(v);
   end

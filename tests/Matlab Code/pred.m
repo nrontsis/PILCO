@@ -32,7 +32,8 @@ function [M S] = pred(policy, plant, dynmodel, m, s, H)
 D = length(m); S = zeros(D,D,H+1); M = zeros(D,H+1);
 M(:,1) = m; S(:,:,1) = s;
 for i = 1:H
-  [m s] = plant.prop(m, s, plant, dynmodel, policy);
+  % Modified to avoid passing function handles
+  [m s] = propagate(m, s, plant, dynmodel, policy);
   M(:,i+1) = m(end-D+1:end); 
   S(:,:,i+1) = s(end-D+1:end,end-D+1:end);
 end
