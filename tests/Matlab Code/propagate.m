@@ -54,7 +54,7 @@ display(3.6)
 % 1) Augment state distribution with trigonometric functions ------------------
 i = 1:D0; j = 1:D0; k = D0+1:D1;
 display(3.7)
-[M(k), S(k,k) C] = gTrig(M(i), S(i,i), angi);
+% [M(k), S(k,k) C] = gTrig(M(i), S(i,i), angi);
 display(3.8)
 q = S(j,i)*C; S(j,k) = q; S(k,j) = q';
 display(4)
