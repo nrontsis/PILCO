@@ -47,16 +47,16 @@ M = zeros(D3,1); M(1:D0) = m; S = zeros(D3); S(1:D0,1:D0) = s;   % init M and S
 
 % 1) Augment state distribution with trigonometric functions ------------------
 i = 1:D0; j = 1:D0; k = D0+1:D1;
-[M(k), S(k,k) C] = gTrig(M(i), S(i,i), angi);
-q = S(j,i)*C; S(j,k) = q; S(k,j) = q';
+% [M(k), S(k,k) C] = gTrig(M(i), S(i,i), angi);
+% q = S(j,i)*C; S(j,k) = q; S(k,j) = q';
 
 sn2 = exp(2*dynmodel.hyp(end,:)); sn2(difi) = sn2(difi)/2;
 % Should we add noise? It's unclear to me.
 % I disabled in order to have the tests passing.
 sn2 = 0*sn2;
 mm=zeros(D1,1); mm(i)=M(i); ss(i,i)=S(i,i)+diag(sn2);
-[mm(k), ss(k,k) C] = gTrig(mm(i), ss(i,i), angi);     % noisy state measurement
-q = ss(j,i)*C; ss(j,k) = q; ss(k,j) = q';
+% [mm(k), ss(k,k) C] = gTrig(mm(i), ss(i,i), angi);     % noisy state measurement
+% q = ss(j,i)*C; ss(j,k) = q; ss(k,j) = q';
 
 % 2) Compute distribution of the control signal -------------------------------
 i = poli; j = 1:D1; k = D1+1:D2;
