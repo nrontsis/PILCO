@@ -55,8 +55,9 @@ display(3.6)
 i = 1:D0; j = 1:D0; k = D0+1:D1;
 display(3.7)
 % [M(k), S(k,k) C] = gTrig(M(i), S(i,i), angi);
+% display(C)
 display(3.8)
-q = S(j,i)*C; S(j,k) = q; S(k,j) = q';
+% q = S(j,i)*C; S(j,k) = q; S(k,j) = q';
 display(4)
 
 sn2 = exp(2*dynmodel.hyp(end,:)); sn2(difi) = sn2(difi)/2;
