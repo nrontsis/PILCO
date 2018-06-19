@@ -1,7 +1,7 @@
 import numpy as np
 import gym
 from pilco.models import PILCO
-from pilco.controllers import RBF_Controller
+from pilco.controllers import RbfController
 np.random.seed(0)
 
 env = gym.make('InvertedPendulum-v2')
@@ -38,10 +38,26 @@ pilco.controller.b.trainable = False
 def pilco_policy(x):
     return pilco.compute_action(x[None, :])[0, :]
 
-for rollouts in range(2):
+'''
+for rollouts in range(1):
     pilco.optimize()
     import pdb; pdb.set_trace()
-    X_new, Y_new = rollout(policy=pilco_policy, timesteps=150)
+    X_new, Y_new = rollout(policy=pilco_policy, timesteps=100)
+    # Update dataset
+    X = np.vstack((X, X_new)); Y = np.vstack((Y, Y_new))
+    pilco.mgpr.set_XY(X, Y)
+'''
+
+# Try with an RBF Controller
+state_dim = Y.shape[1]
+control_dim = X.shape[1] - state_dim
+controller = RbfController(state_dim=state_dim, control_dim=control_dim, num_basis_functions=100)
+pilco = PILCO(X, Y, controller=controller, horizon=50)
+
+for rollouts in range(1):
+    pilco.optimize()
+    import pdb; pdb.set_trace()
+    X_new, Y_new = rollout(policy=pilco_policy, timesteps=100)
     # Update dataset
     X = np.vstack((X, X_new)); Y = np.vstack((Y, Y_new))
     pilco.mgpr.set_XY(X, Y)

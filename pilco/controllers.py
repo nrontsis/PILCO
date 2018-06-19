@@ -24,9 +24,17 @@ class LinearController(gpflow.Parameterized):
         return M, S, V
 
 
-class RBF_Controller(MGPR):
-    def __init__(self, points, values):
-        MGPR.__init__(self, points, values)
+class RbfController(MGPR):
+    '''
+    An RBF Controller implemented as a deterministic GP
+    See Deisenroth et al 2015: Gaussian Processes for Data-Efficient Learning in Robotics and Control
+    Section 5.3.2.
+    '''
+    def __init__(self, state_dim, control_dim, num_basis_functions):
+        MGPR.__init__(self,
+            np.random.rand(num_basis_functions, state_dim),
+            np.random.rand(num_basis_functions, control_dim)
+        )
         for model in self.models:
             model.kern.variance = 1.0
             model.kern.variance.trainable = False

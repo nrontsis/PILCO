@@ -1,4 +1,4 @@
-from pilco.controllers import RBF_Controller, LinearController
+from pilco.controllers import RbfController, LinearController
 import numpy as np
 import os
 from gpflow import autoflow
@@ -23,7 +23,8 @@ def test_rbf():
     X0 = np.random.rand(100, d)
     A = np.random.rand(d, k)
     Y0 = np.sin(X0).dot(A) + 1e-3*(np.random.rand(100, k) - 0.5)  #  Just something smooth
-    rbf = RBF_Controller(X0, Y0)
+    rbf = RbfController(3, 2, 100)
+    rbf.set_XY(X0, Y0)
 
     # Generate input
     m = np.random.rand(1, d)  # But MATLAB defines it as m'
