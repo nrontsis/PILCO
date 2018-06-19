@@ -24,6 +24,14 @@ class LinearController(gpflow.Parameterized):
         return M, S, V
 
 
+class FakeGPR(gpflow.Parameterized):
+    def __init__(self, X, Y, kernel):
+        gpflow.Parameterized.__init__(self)
+        self.X = gpflow.Param(X)
+        self.Y = gpflow.Param(Y)
+        self.kern = kernel
+        self.likelihood = gpflow.likelihoods.Gaussian()
+
 class RbfController(MGPR):
     '''
     An RBF Controller implemented as a deterministic GP
@@ -39,7 +47,12 @@ class RbfController(MGPR):
             model.kern.variance = 1.0
             model.kern.variance.trainable = False
 
-    @gpflow.params_as_tensors
+    def create_models(self, X, Y):
+        self.models = gpflow.params.ParamList([])
+        for i in range(self.num_outputs):
+            kern = gpflow.kernels.RBF(input_dim=X.shape[1], ARD=True)
+            self.models.append(FakeGPR(X, Y[:, i:i+1], kern))
+
     def compute_action(self, m, s):
         '''
         RBF Controller. See Deisenroth's Thesis Section

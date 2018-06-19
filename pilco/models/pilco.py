@@ -32,7 +32,6 @@ class PILCO(gpflow.models.Model):
             self.reward = reward
 
     @gpflow.name_scope('likelihood')
-    @gpflow.params_as_tensors
     def _build_likelihood(self):
         # This is for tunign controller's parameters
 
