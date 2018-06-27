@@ -3,6 +3,30 @@ import numpy as np
 import gpflow
 
 from .models import MGPR
+from gpflow import settings
+float_type = settings.dtypes.float_type
+
+def squash_sin(m, s, e=None):
+    '''
+    Squashing function, passing the controls mean and variance
+    through a sinus, as in gSin.m.
+    '''
+    k = tf.shape(m)[1]
+    if e is None:
+        e = tf.ones((1,k), dtype=float_type)  #squashes in [-1,1] by default
+    mu = e*tf.exp(-tf.diag_part(s) / 2) * tf.sin(m)
+
+    lq = -(tf.reshape(tf.diag_part(s), shape=[k, 1])
+           + tf.reshape(tf.diag_part(s), shape=[1, k])) / 2
+    q = tf.exp(lq)
+    su = (tf.exp(lq + s) - q) * tf.cos(tf.reshape(m, shape=[k, 1])
+                                       - tf.reshape(m, shape=[1, k])) \
+         - (tf.exp(lq - s) - q) * tf.cos(tf.reshape(m, shape=[k, 1])
+                                         + tf.reshape(m, shape=[1, k]))
+    su = tf.reshape(e, shape=[1, k]) * tf.reshape(e, shape=[k, 1]) * su / 2
+    #C = tf.diag( tf.transpose(e) @ tf.exp(-tf.diag_part(s)/2) * tf.cos(m))
+    C = e*tf.diag( tf.exp(-tf.diag_part(s)/2) * tf.cos(m))
+    return mu, su, tf.reshape(C,shape=[k,k])
 
 
 class LinearController(gpflow.Parameterized):
