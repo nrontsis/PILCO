@@ -13,7 +13,7 @@ def squash_sin(m, s, e=None):
     '''
     k = tf.shape(m)[1]
     if e is None:
-        e = tf.ones((1,k), dtype=float_type)  #squashes in [-1,1] by default
+        e = 10*tf.ones((1,k), dtype=float_type)  #squashes in [-1,1] by default
     mu = e*tf.exp(-tf.diag_part(s) / 2) * tf.sin(m)
 
     lq = -(tf.reshape(tf.diag_part(s), shape=[k, 1])
@@ -36,7 +36,7 @@ class LinearController(gpflow.Parameterized):
         self.b = gpflow.Param(np.random.rand(1, control_dim))
 
     @gpflow.params_as_tensors
-    def compute_action(self, m, s):
+    def compute_action(self, m, s, squash=True):
         '''
         Simple affine action:  M <- W(m-t) - b
         IN: mean (m) and variance (s) of the state
@@ -45,6 +45,9 @@ class LinearController(gpflow.Parameterized):
         M = m @ tf.transpose(self.W) + self.b # mean output
         S = self.W @ s @ tf.transpose(self.W) # output variance
         V = tf.transpose(self.W) #input output covariance
+        if squash:
+            M, S, V2 = squash_sin(M, S)
+            V = V @ V2
         return M, S, V
 
 
@@ -56,7 +59,7 @@ class RBF_Controller(MGPR):
             model.kern.variance.trainable = False
 
     @gpflow.params_as_tensors
-    def compute_action(self, m, s):
+    def compute_action(self, m, s, squash=True):
         '''
         RBF Controller. See Deisenroth's Thesis Section
         IN: mean (m) and variance (s) of the state
@@ -65,4 +68,7 @@ class RBF_Controller(MGPR):
         iK, beta = self.calculate_factorizations()
         M, S, V = self.predict_given_factorizations(m, s, 0.0*iK, beta)
         S = S - tf.diag(self.variance - 1e-6)
+        if squash:
+            M, S, V2 = squash_sin(M, S)
+            V = V @ V2
         return M, S, V

@@ -17,9 +17,9 @@
 %   Snext             covariance of the successor state at time t+1      [E x E]
 %
 %
-% Copyright (C) 2008-2013 by 
+% Copyright (C) 2008-2013 by
 % Marc Deisenroth, Andrew McHutchon, Joe Hall, Henrik Ohlsson,
-% and Carl Edward Rasmussen. 
+% and Carl Edward Rasmussen.
 %
 % Last modified: 2013-01-23
 %
@@ -62,6 +62,8 @@ mm=zeros(D1,1); mm(i)=M(i); ss(i,i)=S(i,i)+diag(sn2);
 i = poli; j = 1:D1; k = D1+1:D2;
 % Modified to avoid passing function handles
 [M(k) S(k,k) C] = conlin(policy, mm(i), ss(i,i));
+[M(k) S(k,k) C2] = gSin(M(k), S(k,k));
+C = C * C2;
 q = S(j,i)*C; S(j,k) = q; S(k,j) = q';
 
 % 3) Compute dynamics-GP prediction              ------------------------------
@@ -74,7 +76,7 @@ for n=1:Nf                               % potentially multiple dynamics models
   dyn = dynmodel; k = D2+1:D3; i = ii;
   [M(k), S(k,k), C] = gp0(dyn, M(i), S(i,i));
   q = S(j,i)*C; S(j,k) = q; S(k,j) = q';
-  
+
   j = [j k];                                   % update 'previous' state vector
 end
 
