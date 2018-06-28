@@ -30,12 +30,12 @@
 %
 % Last modified: 2013-03-25
 
-function [M, V, C, dMdm, dVdm, dCdm, dMdv, dVdv, dCdv] = gSin(m, v)
+function [M, V, C, dMdm, dVdm, dCdm, dMdv, dVdv, dCdv] = gSin(m, v, e)
 %% Code
 
 i = [linspace(1,length(m), length(m))];
 d = length(m); I = length(i);
-if nargin == 2, e = 10*ones(I,1); else e = e(:); end          % unit column default
+if nargin == 2, e = ones(I,1); else e = e * ones(I,1); end          % unit column default
 mi(1:I,1) = m(i); vi = v(i,i); vii(1:I,1) = diag(vi);      % short-hand notation
 
 M = e.*exp(-vii/2).*sin(mi);                                              % mean

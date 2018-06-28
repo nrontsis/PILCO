@@ -100,12 +100,13 @@ def test_squash():
     m = np.random.rand(1, d)  # But MATLAB defines it as m'
     s = np.random.rand(d, d)
     s = s.dot(s.T)
+    e = 7.0
 
-    M, S, V = squash_sin(m, s)
+    M, S, V = squash_sin(m, s, e)
     sess = tf.Session()
     M, S, V = sess.run([M, S, V])
 
-    M_mat, S_mat, V_mat = octave.gSin(m.T, s, nout=3)
+    M_mat, S_mat, V_mat = octave.gSin(m.T, s, e, nout=3)
     M_mat = np.asarray(M_mat)
 
     assert M.shape == M_mat.T.shape

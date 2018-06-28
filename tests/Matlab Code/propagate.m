@@ -62,7 +62,7 @@ mm=zeros(D1,1); mm(i)=M(i); ss(i,i)=S(i,i)+diag(sn2);
 i = poli; j = 1:D1; k = D1+1:D2;
 % Modified to avoid passing function handles
 [M(k) S(k,k) C] = conlin(policy, mm(i), ss(i,i));
-[M(k) S(k,k) C2] = gSin(M(k), S(k,k));
+[M(k) S(k,k) C2] = gSin(M(k), S(k,k), policy.maxU);
 C = C * C2;
 q = S(j,i)*C; S(j,k) = q; S(k,j) = q';
 

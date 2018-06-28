@@ -27,12 +27,14 @@ def test_cascade():
     d = 2  # State dimenstion
     k = 1  # Controller's output dimension
     horizon = 10
+    e = np.array([[10.0]])   # Max control input. Set too low can lead to Cholesky failures.
 
     # Training Dataset
     X0 = np.random.rand(100, d + k)
     A = np.random.rand(d + k, d)
     Y0 = np.sin(X0).dot(A) + 1e-3*(np.random.rand(100, d) - 0.5)  #  Just something smooth
     pilco = PILCO(X0, Y0)
+    pilco.controller.e = e
     pilco.optimize()
 
     # Generate input
@@ -47,7 +49,7 @@ def test_cascade():
     policy.p = oct2py.io.Struct()
     policy.p.w = pilco.controller.W.value
     policy.p.b = pilco.controller.b.value.T
-    policy.maxU = 1e5*np.ones(k)
+    policy.maxU = e
 
     # convert data to the struct expected by the MATLAB implementation
     lengthscales = np.stack([model.kern.lengthscales.value for model in pilco.mgpr.models])

@@ -13,7 +13,9 @@ def squash_sin(m, s, e=None):
     '''
     k = tf.shape(m)[1]
     if e is None:
-        e = 10*tf.ones((1,k), dtype=float_type)  #squashes in [-1,1] by default
+        e = tf.ones((1,k), dtype=float_type)  #squashes in [-1,1] by default
+    else:
+        e = e * tf.ones((1,k), dtype=float_type)
     mu = e*tf.exp(-tf.diag_part(s) / 2) * tf.sin(m)
 
     lq = -(tf.reshape(tf.diag_part(s), shape=[k, 1])
@@ -30,10 +32,11 @@ def squash_sin(m, s, e=None):
 
 
 class LinearController(gpflow.Parameterized):
-    def __init__(self, state_dim, control_dim, W=None, b=None):
+    def __init__(self, state_dim, control_dim, W=None, b=None, e=None):
         gpflow.Parameterized.__init__(self)
         self.W = gpflow.Param(np.random.rand(control_dim, state_dim))
         self.b = gpflow.Param(np.random.rand(1, control_dim))
+        self.e = e
 
     @gpflow.params_as_tensors
     def compute_action(self, m, s, squash=True):
@@ -46,17 +49,18 @@ class LinearController(gpflow.Parameterized):
         S = self.W @ s @ tf.transpose(self.W) # output variance
         V = tf.transpose(self.W) #input output covariance
         if squash:
-            M, S, V2 = squash_sin(M, S)
+            M, S, V2 = squash_sin(M, S, self.e)
             V = V @ V2
         return M, S, V
 
 
 class RBF_Controller(MGPR):
-    def __init__(self, points, values):
+    def __init__(self, points, values, e=None):
         MGPR.__init__(self, points, values)
         for model in self.models:
             model.kern.variance = 1.0
             model.kern.variance.trainable = False
+            self.e = e
 
     @gpflow.params_as_tensors
     def compute_action(self, m, s, squash=True):
@@ -69,6 +73,6 @@ class RBF_Controller(MGPR):
         M, S, V = self.predict_given_factorizations(m, s, 0.0*iK, beta)
         S = S - tf.diag(self.variance - 1e-6)
         if squash:
-            M, S, V2 = squash_sin(M, S)
+            M, S, V2 = squash_sin(M, S, self.e)
             V = V @ V2
         return M, S, V
