@@ -20,7 +20,7 @@ class ExponentialReward(Reward):
         Reward.__init__(self)
         self.state_dim = state_dim
         self.W = Param(np.ones((state_dim, state_dim)), trainable=False)
-        self.t = Param(np.random.rand(1, state_dim), trainable=False)
+        self.t = Param(np.zeros((1, state_dim)), trainable=False)
 
     @params_as_tensors
     def compute_reward(self, m, s):
