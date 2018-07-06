@@ -11,7 +11,8 @@ float_type = gpflow.settings.dtypes.float_type
 
 
 class PILCO(gpflow.models.Model):
-    def __init__(self, X, Y, num_induced_points=None, horizon=30, controller=None, reward=None, name=None):
+    def __init__(self, X, Y, num_induced_points=None, horizon=30, controller=None,
+                reward=None, name=None, reward_t=None, reward_W=None):
         super(PILCO, self).__init__(name)
         if not num_induced_points:
             self.mgpr = MGPR(X, Y)
@@ -27,7 +28,7 @@ class PILCO(gpflow.models.Model):
             self.controller = controller
 
         if reward is None:
-            self.reward = rewards.ExponentialReward(self.state_dim)
+            self.reward = rewards.ExponentialReward(self.state_dim, t=reward_t, W=reward_W)
         else:
             self.reward = reward
 

@@ -16,11 +16,17 @@ class Reward(Parameterized):
 
 
 class ExponentialReward(Reward):
-    def __init__(self, state_dim):
+    def __init__(self, state_dim, W=None, t=None):
         Reward.__init__(self)
         self.state_dim = state_dim
-        self.W = Param(np.ones((state_dim, state_dim)), trainable=False)
-        self.t = Param(np.zeros((1, state_dim)), trainable=False)
+        if W is not None:
+            self.W = Param(np.reshape(W, (state_dim, state_dim)), trainable=False)
+        else:
+            self.W = Param(np.ones((state_dim, state_dim)), trainable=False)
+        if t is not None:
+            self.t = Param(np.reshape(t, (1, state_dim)), trainable=False)
+        else:
+            self.t = Param(np.zeros((1, state_dim)), trainable=False)
 
     @params_as_tensors
     def compute_reward(self, m, s):

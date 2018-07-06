@@ -39,7 +39,9 @@ control_dim = X.shape[1] - state_dim
 controller = RbfController(state_dim=state_dim, control_dim=control_dim, num_basis_functions=5)
 #controller = LinearController(state_dim=state_dim, control_dim=control_dim)
 
-pilco = PILCO(X, Y, controller=controller, horizon=20)
+pilco = PILCO(X, Y, controller=controller, horizon=40)
+# Example of reward function input 
+# pilco = PILCO(X, Y, controller=controller, horizon=40, reward_t=np.array([0.1,0,0,0]))
 
 # Example of fixing a parameter, optional, for a linear controller only
 #pilco.controller.b = np.array([[0.0]])
