@@ -27,9 +27,9 @@ class MGPR(gpflow.Parameterized):
             self.models[i].Y = Y[:, i:i+1]
 
     def optimize(self):
-        optimizer = gpflow.train.ScipyOptimizer()
+        optimizer = gpflow.train.ScipyOptimizer(options={'maxfun': 500})
         for model in self.models:
-            optimizer.minimize(model, maxiter=100)
+            optimizer.minimize(model)
 
     def predict_on_noisy_inputs(self, m, s):
         iK, beta = self.calculate_factorizations()

@@ -1,6 +1,7 @@
 import numpy as np
 import tensorflow as tf
 import gpflow
+import pandas as pd
 
 from .mgpr import MGPR
 from .smgpr import SMGPR
@@ -51,12 +52,29 @@ class PILCO(gpflow.models.Model):
         start = time.time()
         self.mgpr.optimize()
         end = time.time()
-        print("GPs' optimization:", end - start, "seconds")
+        print("Finished with GPs' optimization in %.1f seconds" % (end - start))
         start = time.time()
-        optimizer = gpflow.train.ScipyOptimizer()
-        optimizer.minimize(self, maxiter=100, disp=True)
+        optimizer = gpflow.train.ScipyOptimizer(options={'maxfun': 500})
+        optimizer.minimize(self, disp=True)
         end = time.time()
-        print("Controller's optimization:", end - start, "seconds")
+        print("Finished with Controller's optimization in5%.1f seconds" % (end - start))
+
+        lengthscales = {}; variances = {}; noises = {};
+        i = 0
+        for model in self.mgpr.models:
+            lengthscales['GP' + str(i)] = model.kern.lengthscales.value
+            variances['GP' + str(i)] = np.array([model.kern.variance.value])
+            noises['GP' + str(i)] = np.array([model.likelihood.variance.value])
+            i += 1
+
+        print('-----Learned models------')
+        pd.set_option('precision', 3)
+        print('---Lengthscales---')
+        print(pd.DataFrame(data=lengthscales))
+        print('---Variances---')
+        print(pd.DataFrame(data=variances))
+        print('---Noises---')
+        print(pd.DataFrame(data=noises))
 
     @gpflow.autoflow((float_type,[None, None]))
     def compute_action(self, x_m):
