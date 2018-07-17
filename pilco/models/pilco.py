@@ -13,7 +13,7 @@ float_type = gpflow.settings.dtypes.float_type
 
 class PILCO(gpflow.models.Model):
     def __init__(self, X, Y, num_induced_points=None, horizon=30, controller=None,
-                reward=None, name=None):
+                reward=None, m_init=None, S_init=None, name=None):
         super(PILCO, self).__init__(name)
         if not num_induced_points:
             self.mgpr = MGPR(X, Y)
@@ -32,16 +32,20 @@ class PILCO(gpflow.models.Model):
             self.reward = rewards.ExponentialReward(self.state_dim)
         else:
             self.reward = reward
+        
+        if m_init is None or S_init is None:
+            # If the user has not provided an initial state for the rollouts,
+            # then define it as the first state in the dataset.
+            self.m_init = X[0, 0:self.state_dim]
+            self.S_init = np.diag(np.ones(self.state_dim) * 0.1)
+        else:
+            self.m_init = m_init
+            self.S_init = S_init
 
     @gpflow.name_scope('likelihood')
     def _build_likelihood(self):
-        # This is for tunign controller's parameters
-
-        #TODO: m0 and S0 could come from the environment
-        m0 = np.zeros([1,self.state_dim])
-        S0 = np.diag(np.ones(self.state_dim) * 0.01)
-
-        reward = self.predict(m0, S0, self.horizon)[2]
+        # This is for tuning controller's parameters
+        reward = self.predict(self.m_init, self.S_init, self.horizon)[2]
         return reward
 
     def optimize(self):
