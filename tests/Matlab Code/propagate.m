@@ -63,7 +63,7 @@ i = poli; j = 1:D1; k = D1+1:D2;
 % Modified to avoid passing function handles
 [M(k) S(k,k) C] = conlin(policy, mm(i), ss(i,i));
 [M(k) S(k,k) C2] = gSin(M(k), S(k,k), policy.maxU);
-C = C * C2;
+C = C * C2; %slight modification to the original code for easier testings
 q = S(j,i)*C; S(j,k) = q; S(k,j) = q';
 
 % 3) Compute dynamics-GP prediction              ------------------------------

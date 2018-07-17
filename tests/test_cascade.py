@@ -34,7 +34,7 @@ def test_cascade():
     A = np.random.rand(d + k, d)
     Y0 = np.sin(X0).dot(A) + 1e-3*(np.random.rand(100, d) - 0.5)  #  Just something smooth
     pilco = PILCO(X0, Y0)
-    pilco.controller.e = e
+    pilco.controller.max_action = e
     pilco.optimize()
 
     # Generate input

@@ -6,37 +6,38 @@ from .models import MGPR
 from gpflow import settings
 float_type = settings.dtypes.float_type
 
-def squash_sin(m, s, e=None):
+def squash_sin(m, s, max_action=None):
     '''
     Squashing function, passing the controls mean and variance
-    through a sinus, as in gSin.m.
+    through a sinus, as in gSin.m. The output is in [-max_action, max_action].
+    IN: mean (m) and variance(s) of the control input, max_action
+    OUT: mean (M) variance (S) and input-output (C) covariance of the squashed
+         control input
     '''
     k = tf.shape(m)[1]
-    if e is None:
-        e = tf.ones((1,k), dtype=float_type)  #squashes in [-1,1] by default
+    if max_action is None:
+        max_action = tf.ones((1,k), dtype=float_type)  #squashes in [-1,1] by default
     else:
-        e = e * tf.ones((1,k), dtype=float_type)
-    mu = e*tf.exp(-tf.diag_part(s) / 2) * tf.sin(m)
+        max_action = max_action * tf.ones((1,k), dtype=float_type)
 
-    lq = -(tf.reshape(tf.diag_part(s), shape=[k, 1])
-           + tf.reshape(tf.diag_part(s), shape=[1, k])) / 2
+    M = max_action * tf.exp(-tf.diag_part(s) / 2) * tf.sin(m)
+
+    lq = -( tf.diag_part(s)[:, None] + tf.diag_part(s)[None, :]) / 2
     q = tf.exp(lq)
-    su = (tf.exp(lq + s) - q) * tf.cos(tf.reshape(m, shape=[k, 1])
-                                       - tf.reshape(m, shape=[1, k])) \
-         - (tf.exp(lq - s) - q) * tf.cos(tf.reshape(m, shape=[k, 1])
-                                         + tf.reshape(m, shape=[1, k]))
-    su = tf.reshape(e, shape=[1, k]) * tf.reshape(e, shape=[k, 1]) * su / 2
-    #C = tf.diag( tf.transpose(e) @ tf.exp(-tf.diag_part(s)/2) * tf.cos(m))
-    C = e*tf.diag( tf.exp(-tf.diag_part(s)/2) * tf.cos(m))
-    return mu, su, tf.reshape(C,shape=[k,k])
+    S = (tf.exp(lq + s) - q) * tf.cos(tf.transpose(m) - m) \
+        - (tf.exp(lq - s) - q) * tf.cos(tf.transpose(m) + m)
+    S = max_action * tf.transpose(max_action) * S / 2
+
+    C = max_action * tf.diag( tf.exp(-tf.diag_part(s)/2) * tf.cos(m))
+    return M, S, tf.reshape(C,shape=[k,k])
 
 
 class LinearController(gpflow.Parameterized):
-    def __init__(self, state_dim, control_dim, W=None, b=None, e=None):
+    def __init__(self, state_dim, control_dim, max_action=None):
         gpflow.Parameterized.__init__(self)
         self.W = gpflow.Param(np.random.rand(control_dim, state_dim))
         self.b = gpflow.Param(np.random.rand(1, control_dim))
-        self.e = e
+        self.max_action = max_action
 
     @gpflow.params_as_tensors
     def compute_action(self, m, s, squash=True):
@@ -49,7 +50,7 @@ class LinearController(gpflow.Parameterized):
         S = self.W @ s @ tf.transpose(self.W) # output variance
         V = tf.transpose(self.W) #input output covariance
         if squash:
-            M, S, V2 = squash_sin(M, S, self.e)
+            M, S, V2 = squash_sin(M, S, self.max_action)
             V = V @ V2
         return M, S, V
 
@@ -68,7 +69,7 @@ class RbfController(MGPR):
     See Deisenroth et al 2015: Gaussian Processes for Data-Efficient Learning in Robotics and Control
     Section 5.3.2.
     '''
-    def __init__(self, state_dim, control_dim, num_basis_functions, e=None):
+    def __init__(self, state_dim, control_dim, num_basis_functions, max_action=None):
         MGPR.__init__(self,
             np.random.rand(num_basis_functions, state_dim),
             np.random.rand(num_basis_functions, control_dim)
@@ -76,7 +77,7 @@ class RbfController(MGPR):
         for model in self.models:
             model.kern.variance = 1.0
             model.kern.variance.trainable = False
-            self.e = e
+            self.max_action = max_action
 
     def create_models(self, X, Y):
         self.models = gpflow.params.ParamList([])
@@ -91,9 +92,9 @@ class RbfController(MGPR):
         OUT: mean (M) and variance (S) of the action
         '''
         iK, beta = self.calculate_factorizations()
-        M, S, V = self.predict_given_factorizations(m, s, 0.0*iK, beta)
+        M, S, V = self.predict_given_factorizations(m, s, 0.0 * iK, beta)
         S = S - tf.diag(self.variance - 1e-6)
         if squash:
-            M, S, V2 = squash_sin(M, S, self.e)
+            M, S, V2 = squash_sin(M, S, self.max_action)
             V = V @ V2
         return M, S, V
