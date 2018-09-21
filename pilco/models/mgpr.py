@@ -18,6 +18,8 @@ class MGPR(gpflow.Parameterized):
         for i in range(self.num_outputs):
             kern = gpflow.kernels.RBF(input_dim=X.shape[1], ARD=True)
             #TODO: Maybe fix noise for better conditioning
+            # kern.variance = 0.1
+            # kern.variance.trainable = False
             self.models.append(gpflow.models.GPR(X, Y[:, i:i+1], kern))
             self.models[i].clear(); self.models[i].compile()
 
@@ -34,7 +36,7 @@ class MGPR(gpflow.Parameterized):
     def predict_on_noisy_inputs(self, m, s):
         iK, beta = self.calculate_factorizations()
         return self.predict_given_factorizations(m, s, iK, beta)
-    
+
     def calculate_factorizations(self):
         K = self.K(self.X)
         batched_eye = tf.eye(tf.shape(self.X)[0], batch_shape=[self.num_outputs], dtype=float_type)
