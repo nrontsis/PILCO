@@ -20,6 +20,8 @@ class MGPR(gpflow.Parameterized):
         for i in range(self.num_outputs):
             kern = gpflow.kernels.RBF(input_dim=X.shape[1], ARD=True)
             #TODO: Maybe fix noise for better conditioning
+            # kern.variance = 0.1
+            # kern.variance.trainable = False
             self.models.append(gpflow.models.GPR(X, Y[:, i:i+1], kern))
             self.models[i].clear(); self.models[i].compile()
 
