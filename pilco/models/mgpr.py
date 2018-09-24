@@ -18,9 +18,11 @@ class MGPR(gpflow.Parameterized):
         for i in range(self.num_outputs):
             kern = gpflow.kernels.RBF(input_dim=X.shape[1], ARD=True)
             #TODO: Maybe fix noise for better conditioning
-            # kern.variance = 0.1
+            # kern.variance = 0.01
             # kern.variance.trainable = False
             self.models.append(gpflow.models.GPR(X, Y[:, i:i+1], kern))
+            self.models[i].likelihood.variance = 0.001
+            self.models[i].likelihood.variance.trainable = False
             self.models[i].clear(); self.models[i].compile()
 
     def set_XY(self, X, Y):
@@ -29,9 +31,9 @@ class MGPR(gpflow.Parameterized):
             self.models[i].Y = Y[:, i:i+1]
 
     def optimize(self):
-        optimizer = gpflow.train.ScipyOptimizer(options={'maxfun': 500})
+        optimizer = gpflow.train.ScipyOptimizer(options={"maxfun": 50})
         for model in self.models:
-            optimizer.minimize(model)
+            optimizer.minimize(model, maxiter=50)
 
     def predict_on_noisy_inputs(self, m, s):
         iK, beta = self.calculate_factorizations()

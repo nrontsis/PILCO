@@ -6,9 +6,10 @@ from pilco.rewards import ExponentialReward
 np.random.seed(0)
 
 # env = gym.make('InvertedPendulum-v2')
-env = gym.make('MountainCarContinuous-v0')
+# env = gym.make('MountainCarContinuous-v0')
+env = gym.make('Pendulum-v0')
 
-SUBS=1
+SUBS=2
 
 def rollout(policy, timesteps, verbose=False):
     X = []; Y = []
@@ -44,14 +45,14 @@ for i in range(1,3):
 
 state_dim = Y.shape[1]
 control_dim = X.shape[1] - state_dim
-controller = RbfController(state_dim=state_dim, control_dim=control_dim, num_basis_functions=20)
-# controller = LinearController(state_dim=state_dim, control_dim=control_dim)
+controller = RbfController(state_dim=state_dim, control_dim=control_dim, num_basis_functions=5, max_action=2.0)
+# controller = LinearController(state_dim=state_dim, control_dim=control_dim, max_action=2.0)
 
 # Example of user provided reward function, setting a custom target state
-R = ExponentialReward(state_dim=state_dim, t=np.array([0.45, 0.0])) # mountain car
-# R = ExponentialReward(state_dim=state_dim, t=np.array([0.1,0,0,0]))
+# R = ExponentialReward(state_dim=state_dim, t=np.array([0.45, 0.0])) # mountain car
+R = ExponentialReward(state_dim=state_dim, t=np.array([1.0,0,0]), W=np.diag([2.0,2.0,0.0001]))
 
-pilco = PILCO(X, Y, controller=controller, horizon=40, reward=R, m_init=[-0.5,0])
+pilco = PILCO(X, Y, controller=controller, horizon=50, reward=R, m_init=[-1.0,0,0])
 
 # Example of fixing a parameter, optional, for a linear controller only
 #pilco.controller.b = np.array([[0.0]])
@@ -59,12 +60,12 @@ pilco = PILCO(X, Y, controller=controller, horizon=40, reward=R, m_init=[-0.5,0]
 
 for rollouts in range(5):
     pilco.optimize()
-    import pdb; pdb.set_trace()
-    X_new, Y_new = rollout(policy=pilco_policy, timesteps=80, verbose=True)
+    # import pdb; pdb.set_trace()
+    X_new, Y_new = rollout(policy=pilco_policy, timesteps=50, verbose=True)
     # Update dataset
     X = np.vstack((X, X_new)); Y = np.vstack((Y, Y_new))
     pilco.mgpr.set_XY(X, Y)
-    # if rollouts<2:
-        # controller = RbfController(state_dim=state_dim, control_dim=control_dim, num_basis_functions=20)
+    if rollouts<2:
+        controller = RbfController(state_dim=state_dim, control_dim=control_dim, num_basis_functions=5, max_action=2.0)
         # controller = LinearController(state_dim=state_dim, control_dim=control_dim)
-        # pilco = PILCO(X, Y, controller=controller, horizon=40, reward=R, m_init=[-0.5,0])
+        pilco = PILCO(X, Y, controller=controller, horizon=50, reward=R, m_init=[-1.0,0,0])

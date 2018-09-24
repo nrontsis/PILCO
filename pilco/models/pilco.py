@@ -32,7 +32,7 @@ class PILCO(gpflow.models.Model):
             self.reward = rewards.ExponentialReward(self.state_dim)
         else:
             self.reward = reward
-        
+
         if m_init is None or S_init is None:
             # If the user has not provided an initial state for the rollouts,
             # then define it as the first state in the dataset.
@@ -59,7 +59,7 @@ class PILCO(gpflow.models.Model):
         print("Finished with GPs' optimization in %.1f seconds" % (end - start))
         start = time.time()
         optimizer = gpflow.train.ScipyOptimizer(options={'maxfun': 500})
-        optimizer.minimize(self, disp=True)
+        optimizer.minimize(self, disp=True, maxiter=50)
         end = time.time()
         print("Finished with Controller's optimization in5%.1f seconds" % (end - start))
 
