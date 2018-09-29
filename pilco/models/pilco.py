@@ -48,7 +48,7 @@ class PILCO(gpflow.models.Model):
         reward = self.predict(self.m_init, self.S_init, self.horizon)[2]
         return reward
 
-    def optimize(self):
+    def optimize(self, maxiter=50):
         '''
         Optimizes both GP's and controller's hypeparamemeters.
         '''
@@ -58,8 +58,8 @@ class PILCO(gpflow.models.Model):
         end = time.time()
         print("Finished with GPs' optimization in %.1f seconds" % (end - start))
         start = time.time()
-        optimizer = gpflow.train.ScipyOptimizer(options={'maxfun': 500})
-        optimizer.minimize(self, disp=True, maxiter=50)
+        optimizer = gpflow.train.ScipyOptimizer(method="L-BFGS-B")
+        optimizer.minimize(self, disp=True, maxiter=maxiter)
         end = time.time()
         print("Finished with Controller's optimization in5%.1f seconds" % (end - start))
 
