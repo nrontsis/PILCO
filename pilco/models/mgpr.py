@@ -33,7 +33,6 @@ class MGPR(gpflow.Parameterized):
             self.models[i].Y = Y[:, i:i+1]
 
     def optimize(self):
-<<<<<<< HEAD
         if len(self.optimizers) == 0:
             for model in self.models:
                 optimizer = gpflow.train.ScipyOptimizer(method='L-BFGS-B')
@@ -44,11 +43,6 @@ class MGPR(gpflow.Parameterized):
                 optimizer._optimizer.minimize(session=optimizer._model.enquire_session(None),
                            feed_dict=optimizer._gen_feed_dict(optimizer._model, None),
                            step_callback=None)
-=======
-        optimizer = gpflow.train.ScipyOptimizer(options={"maxfun": 50})
-        for model in self.models:
-            optimizer.minimize(model, maxiter=50)
->>>>>>> Pendulum performs the swing up, not the stabilisation. Envirnoment changed, initial state close to the bottom
 
     def predict_on_noisy_inputs(self, m, s):
         iK, beta = self.calculate_factorizations()
