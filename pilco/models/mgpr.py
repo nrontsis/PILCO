@@ -33,7 +33,7 @@ class MGPR(gpflow.Parameterized):
     def optimize(self):
         optimizer = gpflow.train.ScipyOptimizer(method='L-BFGS-B')
         for model in self.models:
-            optimizer.minimize(model, maxiter=50)
+            optimizer.minimize(model, maxiter=300)
 
     def predict_on_noisy_inputs(self, m, s):
         iK, beta = self.calculate_factorizations()
