@@ -21,8 +21,8 @@ class MGPR(gpflow.Parameterized):
             # kern.variance = 0.001
             # kern.variance.trainable = False
             self.models.append(gpflow.models.GPR(X, Y[:, i:i+1], kern))
-            # self.models[i].likelihood.variance = 0.0001
-            # self.models[i].likelihood.variance.trainable = False
+            self.models[i].likelihood.variance = 0.0001
+            self.models[i].likelihood.variance.trainable = False
             self.models[i].clear(); self.models[i].compile()
 
     def set_XY(self, X, Y):
@@ -33,7 +33,7 @@ class MGPR(gpflow.Parameterized):
     def optimize(self):
         optimizer = gpflow.train.ScipyOptimizer(method='L-BFGS-B')
         for model in self.models:
-            optimizer.minimize(model, maxiter=300)
+            optimizer.minimize(model)
 
     def predict_on_noisy_inputs(self, m, s):
         iK, beta = self.calculate_factorizations()
