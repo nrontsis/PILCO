@@ -38,8 +38,8 @@ maxiter=50
 max_action=2.0
 target = np.array([1.0, 0.0, 0.0])
 weights = np.diag([2.0, 2.0, 0.3])
-m_init = np.reshape([-1.0, 0, 4], (1,3))
-S_init = np.diag([0.005, 0.03, 0.01])
+m_init = np.reshape([-1.0, 0, 0.0], (1,3))
+S_init = np.diag([0.01, 0.05, 0.01])
 T = 30
 
 def rollout(policy, timesteps, verbose=False):
@@ -94,9 +94,9 @@ rr = np.zeros(T)
 for i in range(0,T):
     x_pred[i,:], s_pred[i,:,:], rr[i] = pil_predict_wrapper(pilco, m_init, S_init, i)
 
-test = predict_wrapper(pilco.mgpr, np.reshape([-1.0, 0.0, 4.0, 0.0], (1,4)), np.diag([0.005, 0.03, 0.01, 0.001]))
+# test = predict_wrapper(pilco.mgpr, np.reshape([-1.0, 0.0, 4.0, 0.0], (1,4)), np.diag([0.005, 0.03, 0.01, 0.001]))
 
-for rollouts in range(8):
+for rollouts in range(12):
     pilco.optimize(maxiter=maxiter)
     for i in range(1,T):
         x_pred[i,:], s_pred[i,:,:], rr[i] = pil_predict_wrapper(pilco, m_init, S_init, i)
@@ -105,7 +105,12 @@ for rollouts in range(8):
     # Update dataset
     X = np.vstack((X, X_new)); Y = np.vstack((Y, Y_new))
     pilco.mgpr.set_XY(X, Y)
-    #if rollouts<5:
-    #    controller = RbfController(state_dim=state_dim, control_dim=control_dim, num_basis_functions=bf, max_action=max_action)
-        # controller = LinearController(state_dim=state_dim, control_dim=control_dim)
-    #    pilco = PILCO(X, Y, controller=controller, horizon=T, reward=R, m_init=m_init, S_init=S_init)
+    if rollouts % 3 == 0:
+        # tries a random restart
+        c2 = RbfController(state_dim=state_dim, control_dim=control_dim, num_basis_functions=bf, max_action=max_action)
+        p2 = PILCO(X, Y, controller=c2, horizon=T, reward=R, m_init=m_init, S_init=S_init)
+        p2.optimize(maxiter=maxiter)
+        _ ,_ , rr2 = pil_predict_wrapper(p2, m_init, S_init, T)
+        # if the predicted reward is higher,replaces the previous model/controller
+        if rr2 > rr[T-1]:
+            pilco = p2
