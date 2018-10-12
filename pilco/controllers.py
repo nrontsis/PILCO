@@ -71,8 +71,8 @@ class RbfController(MGPR):
     '''
     def __init__(self, state_dim, control_dim, num_basis_functions, max_action=None):
         MGPR.__init__(self,
-            0.1*(np.random.randn(num_basis_functions, state_dim)) + [-1,0,0.0],
-            0.1*np.random.randn(num_basis_functions, control_dim)
+            0.1 * np.random.randn(num_basis_functions, state_dim),
+            0.1 * np.random.randn(num_basis_functions, control_dim)
         )
         for model in self.models:
             model.kern.variance = 1.0
