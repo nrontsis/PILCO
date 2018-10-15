@@ -41,6 +41,8 @@ class PILCO(gpflow.models.Model):
         else:
             self.m_init = m_init
             self.S_init = S_init
+        
+        self.optimizer = None
 
     @gpflow.name_scope('likelihood')
     def _build_likelihood(self):
@@ -58,8 +60,14 @@ class PILCO(gpflow.models.Model):
         end = time.time()
         print("Finished with GPs' optimization in %.1f seconds" % (end - start))
         start = time.time()
-        optimizer = gpflow.train.ScipyOptimizer(method="L-BFGS-B")
-        optimizer.minimize(self, disp=True, maxiter=maxiter)
+        if self.optimizer:
+            self.optimizer._optimizer.minimize(session=self.optimizer._model.enquire_session(None),
+                           feed_dict=self.optimizer._gen_feed_dict(self.optimizer._model, None),
+                           step_callback=None)
+        else:
+            self.optimizer = gpflow.train.ScipyOptimizer(method="L-BFGS-B")
+            self.optimizer.minimize(self, disp=True, maxiter=maxiter, anchor=False)
+
         end = time.time()
         print("Finished with Controller's optimization in %.1f seconds" % (end - start))
 
