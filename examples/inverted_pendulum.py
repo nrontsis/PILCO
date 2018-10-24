@@ -64,8 +64,11 @@ def rollout(env, pilco, policy, timesteps, verbose=False, random=False, SUBS=1):
     X = []; Y = []
     x = env.reset()
     for timestep in range(timesteps):
+<<<<<<< HEAD
         if timestep > 0:
             if done: break
+=======
+>>>>>>> Restructured inverted_pendulum.py for parallel run, added default settting for some envs
         # env.render()
         u = policy(env, pilco, x, random)
         for i in range(SUBS):
@@ -137,8 +140,13 @@ def make_env(env_id, **kwargs):
         # NEEDS a different initialisation than the one in gym (change the reset() method),
         # to (m_init, S_init)
         SUBS=3
+<<<<<<< HEAD
         bf = 30
         maxiter=3
+=======
+        bf = 20
+        maxiter=50
+>>>>>>> Restructured inverted_pendulum.py for parallel run, added default settting for some envs
         max_action=2.0
         target = np.array([1.0, 0.0, 0.0])
         weights = np.diag([2.0, 2.0, 0.3])
