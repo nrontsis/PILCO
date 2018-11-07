@@ -2,7 +2,8 @@ import tensorflow as tf
 import gpflow
 import numpy as np
 float_type = gpflow.settings.dtypes.float_type
-
+import numpy as np
+import copy
 
 class MGPR(gpflow.Parameterized):
     def __init__(self, X, Y, name=None):
@@ -19,6 +20,8 @@ class MGPR(gpflow.Parameterized):
         self.models = []
         for i in range(self.num_outputs):
             kern = gpflow.kernels.RBF(input_dim=X.shape[1], ARD=True)
+            # kern.lengthscales.prior = gpflow.priors.Gamma(1,10)
+            # kern.variance.prior = gpflow.priors.Gamma(1,10)
             #TODO: Maybe fix noise for better conditioning
             # kern.variance = 0.01
             # kern.variance.trainable = False

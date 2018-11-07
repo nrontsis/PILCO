@@ -141,10 +141,14 @@ def make_env(env_id, **kwargs):
         # to (m_init, S_init)
         SUBS=3
 <<<<<<< HEAD
+<<<<<<< HEAD
         bf = 30
         maxiter=3
 =======
         bf = 20
+=======
+        bf = 30
+>>>>>>> #13 Added restart methods for model and controller. #9 Consistent good performance on the pendulum-v0 environment
         maxiter=50
 >>>>>>> Restructured inverted_pendulum.py for parallel run, added default settting for some envs
         max_action=2.0
@@ -179,6 +183,7 @@ def make_env(env_id, **kwargs):
         control_dim = 1
         max_action=1.0 # actions for these environments are discrete
         target = np.array([0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+<<<<<<< HEAD
         weights = 1.5 * np.eye(state_dim)
         weights[5,5]= 0.3
         weights[6,6]= 0.3
@@ -189,6 +194,15 @@ def make_env(env_id, **kwargs):
         S_init[7,7] = 1
         T = 30
         J = 20
+=======
+        weights = np.eye(state_dim)
+        m_init = np.array([0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])[None, :]
+        S_init = 0.1 * np.eye(state_dim)
+        S_init[6,6] = 2
+        S_init[7,7] = 2
+        T = 15
+        J = 10
+>>>>>>> #13 Added restart methods for model and controller. #9 Consistent good performance on the pendulum-v0 environment
         N = 20
         restarts = True
     elif env_id == 'InvertedDoublePendulumWrapped':
