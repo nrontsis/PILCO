@@ -1,7 +1,8 @@
 import tensorflow as tf
 import gpflow
 float_type = gpflow.settings.dtypes.float_type
-
+import numpy as np
+import copy
 
 class MGPR(gpflow.Parameterized):
     def __init__(self, X, Y, name=None):
@@ -18,6 +19,8 @@ class MGPR(gpflow.Parameterized):
         self.models = []
         for i in range(self.num_outputs):
             kern = gpflow.kernels.RBF(input_dim=X.shape[1], ARD=True)
+            # kern.lengthscales.prior = gpflow.priors.Gamma(1,10)
+            # kern.variance.prior = gpflow.priors.Gamma(1,10)
             #TODO: Maybe fix noise for better conditioning
             # kern.variance = 0.001
             # kern.variance.trainable = False
@@ -116,6 +119,33 @@ class MGPR(gpflow.Parameterized):
         S = S - M @ tf.transpose(M)
 
         return tf.transpose(M), S, tf.transpose(V)
+
+    def try_restart(self, session, restarts=1):
+        for r in range(restarts):
+            for i in range(len(self.models)):
+                model = self.models[i]
+                optimizer = self.optimizers[i]
+                store_values = model.read_values(session=session)
+                previous_ll = model.compute_log_likelihood()
+                # reinitialize all kernel parameters
+                model.kern.lengthscales = 1 + 0.01 * np.random.normal(size=model.kern.lengthscales.shape)
+                model.kern.variance = 1 + 0.01 * np.random.normal(size=model.kern.variance.shape)
+                model.likelihood.variance = 1 + 0.001 * np.random.normal()
+
+                optimizer._optimizer.minimize(session=optimizer._model.enquire_session(None),
+                           feed_dict=optimizer._gen_feed_dict(optimizer._model, None),
+                           step_callback=None)
+
+                ll = model.compute_log_likelihood()
+                if  previous_ll > ll:
+                    # set values back to what they were
+                    model.assign(store_values, session=session)
+                    print("Restoring previous values")
+                else:
+                    store_values = model.read_values(session=session)
+                    print('Successful model restart')
+                    previous_ll = ll
+
 
     def centralized_input(self, m):
         return self.X - m

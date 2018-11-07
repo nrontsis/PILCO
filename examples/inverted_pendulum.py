@@ -24,7 +24,7 @@ def rollout(env, pilco, policy, timesteps, verbose=False, random=False, SUBS=1):
             x_new, _, done, _ = env.step(u)
             if done: break
             # env.render()
-            # x_new += [0.001*np.random.randn(), 0.001*np.random.randn(), 0.001*np.random.randn()]
+            #x_new += 0.001 * (np.random.rand()-0.5)
         if verbose:
             print("Action: ", u)
             print("State : ",  x_new)
@@ -61,9 +61,9 @@ def make_env(env_id, **kwargs):
         maxiter = 50        # number of iterations for the controller optimisation
         max_action = 1.0
         target = np.array(np.zeros(state_dim))           # goal state, passed to the reward function
-        weights = np.diag(np.ones(state_dim))            # weights of the reward function
+        weights = np.eye(state_dim)            # weights of the reward function
         m_init = np.reshape(np.zeros(state_dim), (1,state_dim))  # initial state mean
-        S_init = 0.1 * np.diag(np.ones(state_dim))            # initial state variance
+        S_init = 0.1 * np.eye(state_dim)           # initial state variance
         T = 60              # horizon length in timesteps
         J = 5               # number of initial rollouts with random actions
         N = 10              # number of iterations
@@ -86,7 +86,7 @@ def make_env(env_id, **kwargs):
         # NEEDS a different initialisation than the one in gym (change the reset() method),
         # to (m_init, S_init)
         SUBS=3
-        bf = 20
+        bf = 30
         maxiter=50
         max_action=2.0
         target = np.array([1.0, 0.0, 0.0])
@@ -95,8 +95,8 @@ def make_env(env_id, **kwargs):
         S_init = np.diag([0.01, 0.05, 0.01])
         T = 40
         J = 4
-        N = 15
-        restarts = False
+        N = 8
+        restarts = True
     elif env_id == 'CartPole-v0':
         env = gym.make('env_id')
         # Takes discrete actions, crashes for some reason.
@@ -120,9 +120,9 @@ def make_env(env_id, **kwargs):
         control_dim = 1
         max_action=1.0 # actions for these environments are discrete
         target = np.array([0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-        weights = np.diag(np.ones(state_dim))
-        m_init = np.reshape(np.array([0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]), (1,11))
-        S_init = 0.1 * np.diag(np.ones(state_dim))
+        weights = np.eye(state_dim)
+        m_init = np.array([0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])[None, :]
+        S_init = 0.1 * np.eye(state_dim)
         S_init[6,6] = 2
         S_init[7,7] = 2
         T = 15
@@ -150,7 +150,8 @@ def make_env(env_id, **kwargs):
     return env, parameters
 
 def run(env_id, **kwargs ):
-    with tf.Session(graph=tf.Graph()):
+    sess = tf.Session(graph=tf.Graph())
+    with tf.Session() as sess:
         # Make env
         env, parameters = make_env(env_id, **kwargs)
         SUBS, bf, maxiter, max_action, target, weights, m_init, S_init, T, J, N, restarts = \
@@ -164,14 +165,14 @@ def run(env_id, **kwargs ):
         # Initial random rollouts to generate a dataset
         X,Y = rollout(env, None, policy=policy, timesteps=T, random=True, SUBS=SUBS)
         for i in range(1,J):
-            X_, Y_ = rollout(env, None, policy=policy, timesteps=T, random=True, SUBS=SUBS)
+            X_, Y_ = rollout(env, None, policy=policy, timesteps=T, random=True, SUBS=SUBS, verbose=True)
             X = np.vstack((X, X_))
             Y = np.vstack((Y, Y_))
 
         state_dim = Y.shape[1]
         control_dim = X.shape[1] - state_dim
         controller = RbfController(state_dim=state_dim, control_dim=control_dim, num_basis_functions=bf, max_action=max_action)
-        # controller = LinearController(state_dim=state_dim, control_dim=control_dim, max_action=max_action)
+        # controller = LinearController(state_dim=state_dim, control_dim=control_dim, max_action=max_action)
 
         R = ExponentialReward(state_dim=state_dim, t=target, W=weights)
 
@@ -189,27 +190,20 @@ def run(env_id, **kwargs ):
         for rollouts in range(N):
             print("**** ITERATION no", rollouts, " ****")
             pilco.optimize(maxiter=maxiter)
+            pilco.mgpr.try_restart(sess, restarts=5)
+            if restarts: pilco.restart_controller(sess, restarts=3)
             print("No of ops:", len(tf.get_default_graph().get_operations()))
 
             # Predict the trajectory, to check model's accuracy
-            for i in range(1,T):
-                x_pred[i,:], s_pred[i,:,:], rr[i] = pil_predict_wrapper(pilco, m_init, S_init, i)
+            # for i in range(1,T):
+            #     x_pred[i,:], s_pred[i,:,:], rr[i] = pil_predict_wrapper(pilco, m_init, S_init, i)
 
-            X_new, Y_new = rollout(env, pilco, policy=policy, timesteps=T, verbose=False, SUBS=SUBS)
+            X_new, Y_new = rollout(env, pilco, policy=policy, timesteps=T, verbose=True, SUBS=SUBS)
 
             # Update dataset
             X = np.vstack((X, X_new)); Y = np.vstack((Y, Y_new))
             pilco.mgpr.set_XY(X, Y)
 
-            # RESTARTS model and controller, to avoid local minima
-            if restarts  and ((rollouts+1) % 4 == 0):
-                c2 = RbfController(state_dim=state_dim, control_dim=control_dim, num_basis_functions=bf, max_action=max_action)
-                p2 = PILCO(X, Y, controller=c2, horizon=T, reward=R, m_init=m_init, S_init=S_init)
-                p2.optimize(maxiter=2*maxiter)
-                _ ,_ , rr2 = pil_predict_wrapper(p2, m_init, S_init, T)
-                # if the predicted reward is higher,replaces the previous model/controller
-                if rr2 > rr[T-1]:
-                    pilco = p2
         return X, parameters
 
 if __name__ == '__main__':

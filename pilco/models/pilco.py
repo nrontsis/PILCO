@@ -2,6 +2,7 @@ import numpy as np
 import tensorflow as tf
 import gpflow
 import pandas as pd
+import copy
 
 from .mgpr import MGPR
 from .smgpr import SMGPR
@@ -41,7 +42,7 @@ class PILCO(gpflow.models.Model):
         else:
             self.m_init = m_init
             self.S_init = S_init
-        
+
         self.optimizer = None
 
     @gpflow.name_scope('likelihood')
@@ -66,7 +67,7 @@ class PILCO(gpflow.models.Model):
                            step_callback=None)
         else:
             self.optimizer = gpflow.train.ScipyOptimizer(method="L-BFGS-B")
-            self.optimizer.minimize(self, disp=True, maxiter=maxiter)
+            self.optimizer.minimize(self, disp=True, maxiter=maxiter, anchor=False)
 
         end = time.time()
         print("Finished with Controller's optimization in %.1f seconds" % (end - start))
@@ -129,3 +130,32 @@ class PILCO(gpflow.models.Model):
         # While-loop requires the shapes of the outputs to be fixed
         M_x.set_shape([1, self.state_dim]); S_x.set_shape([self.state_dim, self.state_dim])
         return M_x, S_x
+
+    def restart_controller(self, session, restarts=1):
+        values = self.read_values(session=session)
+        old_reward = copy.deepcopy(self.compute_return())
+        for r in range(restarts):
+            self.controller.models[0].X.assign(0.1 * np.random.normal(size=self.controller.models[0].X.shape))
+            self.controller.models[0].Y.assign(0.1 * np.random.normal(size=self.controller.models[0].Y.shape))
+            self.controller.models[0].kern.lengthscales.assign(0.1 * np.random.normal(size=self.controller.models[0].kern.lengthscales.shape) + 1)
+            # self.controller.models[0].kern.lengthscales.trainable = True
+            print(old_reward)
+            self.optimizer._optimizer.minimize(session=self.optimizer._model.enquire_session(None),
+                         feed_dict=self.optimizer._gen_feed_dict(self.optimizer._model, None),
+                         step_callback=None)
+            reward = copy.deepcopy(self.compute_return())
+            print(old_reward)
+            print(reward)
+            if old_reward > reward:
+                # set values back to what they were
+                print("Restoring controller values")
+                self.assign(values, session=session)
+                print(self.compute_return())
+            else:
+                print('Successful restart')
+                values = self.read_values(session=session)
+                old_reward = reward
+
+    @gpflow.autoflow()
+    def compute_return(self):
+        return self._build_likelihood()
