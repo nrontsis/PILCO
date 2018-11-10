@@ -5,4 +5,5 @@ __pycache__
 *.swp
 octave-workspace
 *.egg
+examples/pendulum-matlab/pilcoV0.9/**
 tmp
