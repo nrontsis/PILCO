@@ -23,7 +23,7 @@ warning('off','all'); format short; format compact;
 
 % include some paths
 try
-  rd = '../../';
+  rd = '../pilcoV0.9/';
   addpath([rd 'base'],[rd 'util'],[rd 'gp'],[rd 'control'],[rd 'loss']);
 catch
 end
@@ -84,6 +84,7 @@ plant.difi = difi;
 plant.prop = @propagated;        
 
 % 4. Set up the policy structure
+global policy
 policy.fcn = @(policy,m,s)conCat(@congp,@gSat,policy,m,s);% controller 
                                                           % representation
 policy.maxU = 2.5;                                        % max. amplitude of 
@@ -138,3 +139,8 @@ plotting.verbosity = 1;            % 0: no plots
 x = []; y = [];
 fantasy.mean = cell(1,N); fantasy.std = cell(1,N);
 realCost = cell(1,N); M = cell(N,1); Sigma = cell(N,1);
+
+% Things copied from pendulum_learn
+basename = 'pendulum_';       % filename used for saving data
+mu0Sim(odei,:) = mu0; S0Sim(odei,odei) = S0;
+mu0Sim = mu0Sim(dyno); S0Sim = S0Sim(dyno,dyno);
