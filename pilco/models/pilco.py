@@ -67,7 +67,7 @@ class PILCO(gpflow.models.Model):
                            step_callback=None)
         else:
             self.optimizer = gpflow.train.ScipyOptimizer(method="L-BFGS-B")
-            self.optimizer.minimize(self, disp=True, maxiter=maxiter, anchor=False)
+            self.optimizer.minimize(self, disp=True, maxiter=maxiter)
 
         end = time.time()
         print("Finished with Controller's optimization in %.1f seconds" % (end - start))
