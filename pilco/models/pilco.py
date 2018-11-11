@@ -42,10 +42,6 @@ class PILCO(gpflow.models.Model):
         else:
             self.m_init = m_init
             self.S_init = S_init
-<<<<<<< HEAD
-=======
-
->>>>>>> #13 Added restart methods for model and controller. #9 Consistent good performance on the pendulum-v0 environment
         self.optimizer = None
 
     @gpflow.name_scope('likelihood')
