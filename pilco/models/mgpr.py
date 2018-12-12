@@ -1,5 +1,6 @@
 import tensorflow as tf
 import gpflow
+import numpy as np
 float_type = gpflow.settings.dtypes.float_type
 
 
@@ -34,7 +35,7 @@ class MGPR(gpflow.Parameterized):
     def predict_on_noisy_inputs(self, m, s):
         iK, beta = self.calculate_factorizations()
         return self.predict_given_factorizations(m, s, iK, beta)
-    
+
     def calculate_factorizations(self):
         K = self.K(self.X)
         batched_eye = tf.eye(tf.shape(self.X)[0], batch_shape=[self.num_outputs], dtype=float_type)
@@ -104,6 +105,34 @@ class MGPR(gpflow.Parameterized):
         S = S - M @ tf.transpose(M)
 
         return tf.transpose(M), S, tf.transpose(V)
+
+    def try_restart(self, restarts=1, verbose=False):
+        for r in range(restarts):
+            optimizer = gpflow.train.ScipyOptimizer(options={'maxfun': 500})
+            for i in range(len(self.models)):
+                model = self.models[i]
+                store_values = model.read_values()
+                previous_ll = model.compute_log_likelihood()
+                if verbose: print(previous_ll)
+                # reinitialize all kernel parameters
+                model.kern.lengthscales = 1 + 0.01 * np.random.normal(size=model.kern.lengthscales.shape)
+                model.kern.variance = 1 + 0.01 * np.random.normal(size=model.kern.variance.shape)
+                model.likelihood.variance = 1 + 0.001 * np.random.normal()
+
+                # only want to optimize one model, and the optimizer exists since this is a restart
+                optimizer.minimize(model)
+
+                ll = model.compute_log_likelihood()
+                if verbose: print(ll)
+                if  previous_ll > ll:
+                    # set values back to what they were
+                    model.assign(store_values)
+                    if verbose: print("Restoring previous values")
+                else:
+                    store_values = model.read_values()
+                    if verbose: print('Successful model restart')
+                    previous_ll = ll
+                if verbose: print(model.compute_log_likelihood())
 
     def centralized_input(self, m):
         return self.X - m
