@@ -32,7 +32,7 @@ class PILCO(gpflow.models.Model):
             self.reward = rewards.ExponentialReward(self.state_dim)
         else:
             self.reward = reward
-        
+
         if m_init is None or S_init is None:
             # If the user has not provided an initial state for the rollouts,
             # then define it as the first state in the dataset.
@@ -49,19 +49,18 @@ class PILCO(gpflow.models.Model):
         return reward
 
     def optimize(self):
+        self.optimize_models()
+        self.optimize_policy()
+
+    def optimize_models(self):
         '''
-        Optimizes both GP's and controller's hypeparamemeters.
+        Optimize GP models
         '''
         import time
         start = time.time()
         self.mgpr.optimize()
         end = time.time()
         print("Finished with GPs' optimization in %.1f seconds" % (end - start))
-        start = time.time()
-        optimizer = gpflow.train.ScipyOptimizer(options={'maxfun': 500})
-        optimizer.minimize(self, disp=True)
-        end = time.time()
-        print("Finished with Controller's optimization in5%.1f seconds" % (end - start))
 
         lengthscales = {}; variances = {}; noises = {};
         i = 0
@@ -70,7 +69,6 @@ class PILCO(gpflow.models.Model):
             variances['GP' + str(i)] = np.array([model.kern.variance.value])
             noises['GP' + str(i)] = np.array([model.likelihood.variance.value])
             i += 1
-
         print('-----Learned models------')
         pd.set_option('precision', 3)
         print('---Lengthscales---')
@@ -79,6 +77,17 @@ class PILCO(gpflow.models.Model):
         print(pd.DataFrame(data=variances))
         print('---Noises---')
         print(pd.DataFrame(data=noises))
+
+    def optimize_policy(self):
+        '''
+        Optimize controller's parameter's
+        '''
+        import time
+        start = time.time()
+        optimizer = gpflow.train.ScipyOptimizer(options={'maxfun': 500})
+        optimizer.minimize(self, disp=True)
+        end = time.time()
+        print("Finished with Controller's optimization in %.1f seconds" % (end - start))
 
     @gpflow.autoflow((float_type,[None, None]))
     def compute_action(self, x_m):
