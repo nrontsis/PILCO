@@ -54,6 +54,11 @@ class LinearController(gpflow.Parameterized):
             V = V @ V2
         return M, S, V
 
+    def randomize(self):
+        print("Randomising controller")
+        self.W.assign(np.random.normal(size=self.W.shape))
+        self.b.assign(np.random.normal(size=self.b.shape))
+
 
 class FakeGPR(gpflow.Parameterized):
     def __init__(self, X, Y, kernel):
@@ -98,3 +103,10 @@ class RbfController(MGPR):
             M, S, V2 = squash_sin(M, S, self.max_action)
             V = V @ V2
         return M, S, V
+
+    def randomize(self):
+        print("Randomising controller")
+        for m in self.models:
+            m.X.assign(0.1 * np.random.normal(size=m.X.shape))
+            m.Y.assign(0.1 * np.random.normal(size=m.Y.shape))
+            m.kern.lengthscales.assign(0.1 * np.random.normal(size=m.kern.lengthscales.shape) + 1)

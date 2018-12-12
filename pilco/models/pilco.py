@@ -138,12 +138,7 @@ class PILCO(gpflow.models.Model):
         old_reward = copy.deepcopy(self.compute_return())
 
         # Reinitialize values
-        for r in range(restarts):
-            for m in self.controller.models:
-                print("Reinitialising")
-                m.X.assign(0.1 * np.random.normal(size=m.X.shape))
-                m.Y.assign(0.1 * np.random.normal(size=m.Y.shape))
-                m.kern.lengthscales.assign(0.1 * np.random.normal(size=m.kern.lengthscales.shape) + 1)
+        self.controller.randomize()
 
         # Make sure this stayed the same
         if verbose: print(old_reward)
