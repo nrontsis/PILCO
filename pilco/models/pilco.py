@@ -2,6 +2,7 @@ import numpy as np
 import tensorflow as tf
 import gpflow
 import pandas as pd
+import copy
 
 from .mgpr import MGPR
 from .smgpr import SMGPR
@@ -78,14 +79,14 @@ class PILCO(gpflow.models.Model):
         print('---Noises---')
         print(pd.DataFrame(data=noises))
 
-    def optimize_policy(self):
+    def optimize_policy(self, maxiter=50):
         '''
         Optimize controller's parameter's
         '''
         import time
         start = time.time()
         optimizer = gpflow.train.ScipyOptimizer(options={'maxfun': 500})
-        optimizer.minimize(self, disp=True)
+        optimizer.minimize(self, disp=True, maxiter=maxiter)
         end = time.time()
         print("Finished with Controller's optimization in %.1f seconds" % (end - start))
 
@@ -130,3 +131,39 @@ class PILCO(gpflow.models.Model):
         # While-loop requires the shapes of the outputs to be fixed
         M_x.set_shape([1, self.state_dim]); S_x.set_shape([self.state_dim, self.state_dim])
         return M_x, S_x
+
+    def restart_controller(self, restarts=1, verbose=False):
+        # Save values
+        values = self.read_values()
+        old_reward = copy.deepcopy(self.compute_return())
+
+        # Reinitialize values
+        for r in range(restarts):
+            for m in self.controller.models:
+                print("Reinitialising")
+                m.X.assign(0.1 * np.random.normal(size=m.X.shape))
+                m.Y.assign(0.1 * np.random.normal(size=m.Y.shape))
+                m.kern.lengthscales.assign(0.1 * np.random.normal(size=m.kern.lengthscales.shape) + 1)
+
+        # Make sure this stayed the same
+        if verbose: print(old_reward)
+        # Retrain
+        self.optimize_policy()
+
+        reward = copy.deepcopy(self.compute_return())
+        if verbose:
+            print(old_reward)
+            print(reward)
+        # If restart successgul keep new values, otherwise return to the previous
+        if old_reward > reward:
+            if verbose: print("Restoring controller values")
+            self.assign(values)
+            if verbose: print(self.compute_return())
+        else:
+            if verbose: print('Successful restart')
+            values = self.read_values()
+            old_reward = reward
+
+    @gpflow.autoflow()
+    def compute_return(self):
+        return self._build_likelihood()
