@@ -13,6 +13,7 @@ class MGPR(gpflow.Parameterized):
         self.num_datapoints = X.shape[0]
 
         self.create_models(X, Y)
+        self.optimizers = []
 
     def create_models(self, X, Y):
         self.models = []
@@ -28,9 +29,16 @@ class MGPR(gpflow.Parameterized):
             self.models[i].Y = Y[:, i:i+1]
 
     def optimize(self):
-        optimizer = gpflow.train.ScipyOptimizer(options={'maxfun': 500})
-        for model in self.models:
-            optimizer.minimize(model)
+        if len(self.optimizers) == 0:
+            optimizer = gpflow.train.ScipyOptimizer(method='L-BFGS-B')
+            for model in self.models:
+                optimizer.minimize(model)
+                self.optimizers.append(optimizer)
+        else:
+            for optimizer in self.optimizers:
+                optimizer._optimizer.minimize(session=optimizer._model.enquire_session(None),
+                           feed_dict=optimizer._gen_feed_dict(optimizer._model, None),
+                           step_callback=None)
 
     def predict_on_noisy_inputs(self, m, s):
         iK, beta = self.calculate_factorizations()
@@ -111,6 +119,7 @@ class MGPR(gpflow.Parameterized):
             optimizer = gpflow.train.ScipyOptimizer(options={'maxfun': 500})
             for i in range(len(self.models)):
                 model = self.models[i]
+                optimizer = self.optimizers[i]
                 store_values = model.read_values()
                 previous_ll = model.compute_log_likelihood()
                 if verbose: print(previous_ll)
@@ -120,7 +129,9 @@ class MGPR(gpflow.Parameterized):
                 model.likelihood.variance = 1 + 0.001 * np.random.normal()
 
                 # only want to optimize one model, and the optimizer exists since this is a restart
-                optimizer.minimize(model)
+                optimizer._optimizer.minimize(session=optimizer._model.enquire_session(None),
+                           feed_dict=optimizer._gen_feed_dict(optimizer._model, None),
+                           step_callback=None)
 
                 ll = model.compute_log_likelihood()
                 if verbose: print(ll)
