@@ -14,21 +14,55 @@ float_type = settings.dtypes.float_type
 def pil_predict_wrapper(pilco, m_x, s_n, n):
     return pilco.predict(m_x, s_n, n)
 
+
+@autoflow((float_type, [None, None]), (float_type, [None, None]))
+def reward_wrapper(reward, m, s):
+    return reward.compute_reward(m, s)
+
+
+class DoublePendWrapper():
+    def __init__(self):
+        self.env = gym.make('InvertedDoublePendulum-v2')
+        self.action_space = self.env.action_space
+        self.observation_space = self.env.observation_space
+
+    def state_trans(self, s):
+        a1 = np.arctan2(s[1], s[3])
+        a2 = np.arctan2(s[2], s[4])
+        s_new = np.hstack([s[0], a1, a2, s[5:-3]])
+        return s_new
+
+    def step(self, action):
+        ob, r, done, _ = self.env.step(action)
+        if np.abs(ob[0])> 0.98 or np.abs(ob[-3]) > 0.1 or  np.abs(ob[-2]) > 0.1 or np.abs(ob[-1]) > 0.1:
+            done = True
+        return self.state_trans(ob), r, done, {}
+
+    def reset(self):
+        ob =  self.env.reset()
+        return self.state_trans(ob)
+
+    def render(self):
+        self.env.render()
+
+
 def rollout(env, pilco, policy, timesteps, verbose=False, random=False, SUBS=1):
     X = []; Y = []
     x = env.reset()
     for timestep in range(timesteps):
-        # env.render()
+        if timestep > 0:
+            if done: break
+        env.render()
         u = policy(env, pilco, x, random)
         for i in range(SUBS):
             x_new, _, done, _ = env.step(u)
             if done: break
-            # env.render()
+            env.render()
             #x_new += 0.001 * (np.random.rand()-0.5)
         if verbose:
             print("Action: ", u)
             print("State : ",  x_new)
-        if done: break
+        # if done: break
         X.append(np.hstack((x, u)))
         Y.append(x_new - x)
         x = x_new
@@ -87,7 +121,7 @@ def make_env(env_id, **kwargs):
         # to (m_init, S_init)
         SUBS=3
         bf = 30
-        maxiter=50
+        maxiter=3
         max_action=2.0
         target = np.array([1.0, 0.0, 0.0])
         weights = np.diag([2.0, 2.0, 0.3])
@@ -99,7 +133,7 @@ def make_env(env_id, **kwargs):
         restarts = True
     elif env_id == 'CartPole-v0':
         env = gym.make('env_id')
-        # Takes discrete actions, crashes for some reason.
+        # Takes discrete actions, crashes.
         SUBS = 2
         bf = 20
         maxiter=50
@@ -114,20 +148,64 @@ def make_env(env_id, **kwargs):
     elif env_id == 'InvertedDoublePendulum-v2':
         env = gym.make(env_id)
         SUBS = 1
-        bf = 100
-        maxiter=150
+        bf = 60
+        maxiter=100
         state_dim = 11
         control_dim = 1
         max_action=1.0 # actions for these environments are discrete
         target = np.array([0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-        weights = np.eye(state_dim)
+        weights = 1.5 * np.eye(state_dim)
+        weights[5,5]= 0.3
+        weights[6,6]= 0.3
+        weights[7,7]= 0.3
         m_init = np.array([0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])[None, :]
-        S_init = 0.1 * np.eye(state_dim)
-        S_init[6,6] = 2
-        S_init[7,7] = 2
-        T = 15
-        J = 10
+        S_init = 0.01 * np.eye(state_dim)
+        S_init[6,6] = 1 # ???
+        S_init[7,7] = 1
+        T = 30
+        J = 20
         N = 20
+        restarts = True
+    elif env_id == 'InvertedDoublePendulumWrapped':
+        env = DoublePendWrapper()
+        SUBS = 1
+        bf = 40
+        maxiter=30
+        state_dim = 6
+        control_dim = 1
+        max_action=1.0 # actions for these environments are discrete
+        target = np.zeros(state_dim)
+        weights = 3.0 * np.eye(state_dim)
+        weights[0,0] = 0.5
+        weights[3,3] = 0.5
+        m_init = np.zeros(state_dim)[None, :]
+        S_init = 0.01 * np.eye(state_dim)
+        T = 40
+        J = 20
+        N = 15
+        T_sim = 130
+        restarts=True
+    elif env_id == 'Quadcopter':
+        from quadcopter_env import Quadcopter
+        env = Quadcopter()
+        SUBS = 1
+        bf = 100
+        maxiter = 50
+        state_dim = 15
+        control_dim = 4
+        max_action = 1.0
+        weights = 0.00001 * np.eye(state_dim)
+        weights[0,0] = 1; weights[1,1] = 1; weights[2,2] = 1
+        m_init = np.array([ 0., 0., 10., 1., 0., 1., 0., 1., 0., 0., 0., 0., 0., 0., 0.])[None, :]
+        target = np.zeros(state_dim)
+        target[:] = m_init[:]
+        target[0] += 0.5; target[1] += 0.0; target[2] += 1.0
+        S_init = 0.01 * np.eye(state_dim)
+        T = 30
+        J = 5
+        N = 10
+        restarts = True
+
     else:
         print("Didn't recognise environment id")
 
@@ -145,7 +223,10 @@ def make_env(env_id, **kwargs):
     parameters['J'] = kwargs.get('J', J)
     parameters['N'] = kwargs.get('N', N)
     parameters['restarts'] = kwargs.get('restarts', restarts)
-    print(parameters['restarts'])
+    try:
+        parameters['T_sim'] = T_sim
+    except:
+        paremeters['T_sim'] = T
     parameters['seed'] = seed
     return env, parameters
 
@@ -154,13 +235,14 @@ def run(env_id, **kwargs ):
     with tf.Session() as sess:
         # Make env
         env, parameters = make_env(env_id, **kwargs)
-        SUBS, bf, maxiter, max_action, target, weights, m_init, S_init, T, J, N, restarts = \
+        SUBS, bf, maxiter, max_action, target, weights, m_init, S_init, T, J, N, restarts, T_sim = \
         parameters['SUBS'], parameters['bf'],                  \
         parameters['maxiter'], parameters['max_action'],       \
         parameters['target'], parameters['weights'],           \
         parameters['m_init'], parameters['S_init'],            \
         parameters['T'], parameters['J'],                      \
-        parameters['N'], parameters['restarts']
+        parameters['N'], parameters['restarts'],               \
+        parameters['T_sim']
 
         # Initial random rollouts to generate a dataset
         X,Y = rollout(env, None, policy=policy, timesteps=T, random=True, SUBS=SUBS)
@@ -186,26 +268,33 @@ def run(env_id, **kwargs ):
         x_pred = np.zeros((T, state_dim))
         s_pred = np.zeros((T, state_dim, state_dim))
         rr = np.zeros(T)
-
+        lens = []
         for rollouts in range(N):
             print("**** ITERATION no", rollouts, " ****")
             pilco.optimize(maxiter=maxiter)
             pilco.mgpr.try_restart(sess, restarts=5)
-            if restarts: pilco.restart_controller(sess, restarts=3)
+            if restarts: pilco.restart_controller(sess, restarts=1)
             print("No of ops:", len(tf.get_default_graph().get_operations()))
 
             # Predict the trajectory, to check model's accuracy
             # for i in range(1,T):
             #     x_pred[i,:], s_pred[i,:,:], rr[i] = pil_predict_wrapper(pilco, m_init, S_init, i)
 
-            X_new, Y_new = rollout(env, pilco, policy=policy, timesteps=T, verbose=True, SUBS=SUBS)
-
+            X_new, Y_new = rollout(env, pilco, policy=policy, timesteps=T_sim, verbose=True, SUBS=SUBS)
+            cur_rew = 0
+            for t in range(0,len(X_new)):
+                cur_rew += reward_wrapper(R, X_new[t, 0:state_dim, None].transpose(), 0.0001 * np.eye(state_dim))[0]
+            print('On this episode reward was ', cur_rew)
             # Update dataset
             X = np.vstack((X, X_new)); Y = np.vstack((Y, Y_new))
             pilco.mgpr.set_XY(X, Y)
+            lens.append(len(X_new))
+            if len(X_new) > 120: break
 
+        parameters['lens'] = lens
         return X, parameters
 
 if __name__ == '__main__':
     np.random.seed(0)
-    run('Pendulum-v0')
+    run('InvertedDoublePendulumWrapped')
+    #run('Quadcopter')

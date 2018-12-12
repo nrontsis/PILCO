@@ -135,10 +135,24 @@ class PILCO(gpflow.models.Model):
         values = self.read_values(session=session)
         old_reward = copy.deepcopy(self.compute_return())
         for r in range(restarts):
-            self.controller.models[0].X.assign(0.1 * np.random.normal(size=self.controller.models[0].X.shape))
-            self.controller.models[0].Y.assign(0.1 * np.random.normal(size=self.controller.models[0].Y.shape))
-            self.controller.models[0].kern.lengthscales.assign(0.1 * np.random.normal(size=self.controller.models[0].kern.lengthscales.shape) + 1)
-            # self.controller.models[0].kern.lengthscales.trainable = True
+            select = np.random.rand()
+            for m in self.controller.models:
+                if select < 0.33:
+                    print("Reinitialising")
+                    m.X.assign(0.1 * np.random.normal(size=m.X.shape))
+                    m.Y.assign(0.1 * np.random.normal(size=m.Y.shape))
+                    m.kern.lengthscales.assign(0.1 * np.random.normal(size=m.kern.lengthscales.shape) + 1)
+                elif select < 0.67:
+                    print("Reinitialising with X close to m_init")
+                    m.X.assign(0.1 * np.random.normal(size=m.X.shape) + self.m_init)
+                    m.Y.assign(0.1 * np.random.normal(size=m.Y.shape))
+                    m.kern.lengthscales.assign(0.1 * np.random.normal(size=m.kern.lengthscales.shape) + 1)
+                else:
+                    print("Perturbing current values")
+                    m.X.assign(0.1 * np.random.normal(size=m.X.shape) + m.X.value)
+                    m.Y.assign(0.1 * np.random.normal(size=m.Y.shape) + m.Y.value)
+                    m.kern.lengthscales.assign(0.1 * np.random.normal(size=m.kern.lengthscales.shape) +
+                                                                            m.kern.lengthscales.value)
             print(old_reward)
             self.optimizer._optimizer.minimize(session=self.optimizer._model.enquire_session(None),
                          feed_dict=self.optimizer._gen_feed_dict(self.optimizer._model, None),

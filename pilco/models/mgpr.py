@@ -19,14 +19,15 @@ class MGPR(gpflow.Parameterized):
         self.models = []
         for i in range(self.num_outputs):
             kern = gpflow.kernels.RBF(input_dim=X.shape[1], ARD=True)
-            # kern.lengthscales.prior = gpflow.priors.Gamma(1,10)
-            # kern.variance.prior = gpflow.priors.Gamma(1,10)
+            kern.lengthscales.prior = gpflow.priors.Gamma(1,10)
+            kern.variance.prior = gpflow.priors.Gamma(1.5,2)
             #TODO: Maybe fix noise for better conditioning
             # kern.variance = 0.001
             # kern.variance.trainable = False
             self.models.append(gpflow.models.GPR(X, Y[:, i:i+1], kern))
-            self.models[i].likelihood.variance = 0.0001
-            self.models[i].likelihood.variance.trainable = False
+            self.models[i].likelihood.variance.prior = gpflow.priors.Gamma(1.5,2)
+            #self.models[i].likelihood.variance = 0.0001
+            #self.models[i].likelihood.variance.trainable = False
             self.models[i].clear(); self.models[i].compile()
 
     def set_XY(self, X, Y):
@@ -127,6 +128,7 @@ class MGPR(gpflow.Parameterized):
                 optimizer = self.optimizers[i]
                 store_values = model.read_values(session=session)
                 previous_ll = model.compute_log_likelihood()
+                print(previous_ll)
                 # reinitialize all kernel parameters
                 model.kern.lengthscales = 1 + 0.01 * np.random.normal(size=model.kern.lengthscales.shape)
                 model.kern.variance = 1 + 0.01 * np.random.normal(size=model.kern.variance.shape)
@@ -137,6 +139,7 @@ class MGPR(gpflow.Parameterized):
                            step_callback=None)
 
                 ll = model.compute_log_likelihood()
+                print(ll)
                 if  previous_ll > ll:
                     # set values back to what they were
                     model.assign(store_values, session=session)
@@ -145,6 +148,7 @@ class MGPR(gpflow.Parameterized):
                     store_values = model.read_values(session=session)
                     print('Successful model restart')
                     previous_ll = ll
+                print(model.compute_log_likelihood())
 
 
     def centralized_input(self, m):
