@@ -20,8 +20,10 @@ class SMGPR(MGPR):
             Z = np.random.rand(self.num_induced_points, self.num_dims)
             #TODO: Maybe fix noise for better conditioning
             self.models.append(gpflow.models.SGPR(X, Y[:, i:i+1], kern, Z=Z))
+            self.models[i].likelihood.variance = 0.0001
+            self.models[i].likelihood.variance.trainable = False
             self.models[i].clear(); self.models[i].compile()
-    
+
     def calculate_factorizations(self):
         batched_eye = tf.eye(self.num_induced_points, batch_shape=[self.num_outputs], dtype=float_type)
         # TODO: Change 1e-6 to the respective constant of GPflow

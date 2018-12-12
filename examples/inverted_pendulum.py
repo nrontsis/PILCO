@@ -60,21 +60,53 @@ class SwimmerWrapper():
         self.env.render()
 
 
+
+@autoflow((float_type, [None, None]), (float_type, [None, None]))
+def reward_wrapper(reward, m, s):
+    return reward.compute_reward(m, s)
+
+
+class DoublePendWrapper():
+    def __init__(self):
+        self.env = gym.make('InvertedDoublePendulum-v2')
+        self.action_space = self.env.action_space
+        self.observation_space = self.env.observation_space
+
+    def state_trans(self, s):
+        a1 = np.arctan2(s[1], s[3])
+        a2 = np.arctan2(s[2], s[4])
+        s_new = np.hstack([s[0], a1, a2, s[5:-3]])
+        return s_new
+
+    def step(self, action):
+        ob, r, done, _ = self.env.step(action)
+        if np.abs(ob[0])> 0.98 or np.abs(ob[-3]) > 0.1 or  np.abs(ob[-2]) > 0.1 or np.abs(ob[-1]) > 0.1:
+            done = True
+        return self.state_trans(ob), r, done, {}
+
+    def reset(self):
+        ob =  self.env.reset()
+        return self.state_trans(ob)
+
+    def render(self):
+        self.env.render()
+
+
 def rollout(env, pilco, policy, timesteps, verbose=False, random=False, SUBS=1):
     X = []; Y = []
     x = env.reset()
     for timestep in range(timesteps):
-<<<<<<< HEAD
         if timestep > 0:
             if done: break
-=======
->>>>>>> Restructured inverted_pendulum.py for parallel run, added default settting for some envs
         # env.render()
+        if timestep > 0:
+            if done: break
+        env.render()
         u = policy(env, pilco, x, random)
         for i in range(SUBS):
             x_new, _, done, _ = env.step(u)
             if done: break
-            # env.render()
+            env.render()
             #x_new += 0.001 * (np.random.rand()-0.5)
         if verbose:
             print("Action: ", u)
@@ -140,17 +172,9 @@ def make_env(env_id, **kwargs):
         # NEEDS a different initialisation than the one in gym (change the reset() method),
         # to (m_init, S_init)
         SUBS=3
-<<<<<<< HEAD
-<<<<<<< HEAD
         bf = 30
         maxiter=3
-=======
-        bf = 20
-=======
-        bf = 30
->>>>>>> #13 Added restart methods for model and controller. #9 Consistent good performance on the pendulum-v0 environment
         maxiter=50
->>>>>>> Restructured inverted_pendulum.py for parallel run, added default settting for some envs
         max_action=2.0
         target = np.array([1.0, 0.0, 0.0])
         weights = np.diag([2.0, 2.0, 0.3])
@@ -183,7 +207,6 @@ def make_env(env_id, **kwargs):
         control_dim = 1
         max_action=1.0 # actions for these environments are discrete
         target = np.array([0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-<<<<<<< HEAD
         weights = 1.5 * np.eye(state_dim)
         weights[5,5]= 0.3
         weights[6,6]= 0.3
@@ -195,14 +218,13 @@ def make_env(env_id, **kwargs):
         T = 30
         J = 20
 =======
-        weights = np.eye(state_dim)
         m_init = np.array([0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])[None, :]
-        S_init = 0.1 * np.eye(state_dim)
-        S_init[6,6] = 2
-        S_init[7,7] = 2
-        T = 15
-        J = 10
->>>>>>> #13 Added restart methods for model and controller. #9 Consistent good performance on the pendulum-v0 environment
+        S_init = 0.01 * np.eye(state_dim)
+        S_init[6,6] = 1 # ???
+        S_init[7,7] = 1
+        T = 30
+        J = 20
+>>>>>>> Solved double inverted pendulum, using an environment wrapper
         N = 20
         restarts = True
     elif env_id == 'InvertedDoublePendulumWrapped':
