@@ -80,7 +80,7 @@ class PILCO(gpflow.models.Model):
         print('---Noises---')
         print(pd.DataFrame(data=noises))
 
-    def optimize_policy(self, maxiter=50):
+    def optimize_policy(self, maxiter=10):
         '''
         Optimize controller's parameter's
         '''
@@ -138,16 +138,18 @@ class PILCO(gpflow.models.Model):
         M_x.set_shape([1, self.state_dim]); S_x.set_shape([self.state_dim, self.state_dim])
         return M_x, S_x
 
-    def restart_controller(self, restarts=1, verbose=False):
+    def restart_controller(self, session, restarts=1, verbose=False):
         # Save values
-        values = self.read_values()
+        values = self.read_values(session=session)
         old_reward = copy.deepcopy(self.compute_return())
 
         # Reinitialize values
         self.controller.randomize()
 
         # Make sure this stayed the same
-        if verbose: print(old_reward)
+        if verbose:
+            print("Before restart", old_reward)
+            print("After restart before optimisation", self.compute_return())
         # Retrain
         self.optimize_policy()
 
@@ -161,8 +163,8 @@ class PILCO(gpflow.models.Model):
             self.assign(values)
             if verbose: print(self.compute_return())
         else:
-            if verbose: print('Successful restart')
-            values = self.read_values()
+            print('Successful controller restart, predicted reward from ', old_reward, " to ", reward)
+            values = self.read_values(session=session)
             old_reward = reward
 
     @gpflow.autoflow()
