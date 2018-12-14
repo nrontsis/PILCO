@@ -37,8 +37,8 @@ class MGPR(gpflow.Parameterized):
 
     def optimize(self):
         if len(self.optimizers) == 0:
-            optimizer = gpflow.train.ScipyOptimizer(method='L-BFGS-B')
             for model in self.models:
+                optimizer = gpflow.train.ScipyOptimizer(method='L-BFGS-B')
                 optimizer.minimize(model)
                 self.optimizers.append(optimizer)
         else:

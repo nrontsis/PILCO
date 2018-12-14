@@ -170,7 +170,7 @@ def make_env(env_id, **kwargs):
         env = DoublePendWrapper()
         SUBS = 1
         bf = 40
-        maxiter=30
+        maxiter=80
         state_dim = 6
         control_dim = 1
         max_action=1.0 # actions for these environments are discrete
@@ -181,8 +181,8 @@ def make_env(env_id, **kwargs):
         m_init = np.zeros(state_dim)[None, :]
         S_init = 0.01 * np.eye(state_dim)
         T = 40
-        J = 20
-        N = 15
+        J = 1
+        N = 12
         T_sim = 130
         restarts=True
     elif env_id == 'Quadcopter':
@@ -272,7 +272,7 @@ def run(env_id, **kwargs ):
         for rollouts in range(N):
             print("**** ITERATION no", rollouts, " ****")
             pilco.optimize(maxiter=maxiter)
-            pilco.mgpr.try_restart(sess, restarts=5)
+            pilco.mgpr.try_restart(sess, restarts=1)
             if restarts: pilco.restart_controller(sess, restarts=1)
             print("No of ops:", len(tf.get_default_graph().get_operations()))
 
