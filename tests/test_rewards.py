@@ -10,9 +10,7 @@ octave.addpath(dir_path)
 
 float_type = settings.dtypes.float_type
 
-@autoflow((float_type, [None, None]), (float_type, [None, None]))
-def reward_wrapper(reward, m, s):
-    return reward.compute_reward(m, s)
+from pilco.utils import reward_wrapper
 
 def test_reward():
     '''

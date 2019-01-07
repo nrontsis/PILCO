@@ -14,13 +14,7 @@ octave.addpath(dir_path)
 
 float_type = settings.dtypes.float_type
 
-@autoflow((float_type,[None, None]), (float_type,[None, None]), (np.int32, []))
-def predict_wrapper(pilco, m, s, horizon):
-    return pilco.predict(m, s, horizon)
-
-@autoflow((float_type,[None, None]), (float_type,[None, None]))
-def compute_action_wrapper(pilco, m, s):
-    return pilco.controller.compute_action(m, s)
+from pilco.utils import predict_wrapper, compute_action_wrapper
 
 def test_cascade():
     np.random.seed(0)
