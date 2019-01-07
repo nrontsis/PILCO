@@ -10,13 +10,7 @@ octave.addpath(dir_path)
 
 float_type = settings.dtypes.float_type
 
-@autoflow((float_type,[None, None]), (float_type,[None, None]))
-def predict_wrapper(smgpr, m, s):
-    return smgpr.predict_on_noisy_inputs(m, s)
-
-@autoflow()
-def get_induced_points(smgpr):
-    return smgpr.Z
+from pilco.utils import predict_gpr_wrapper, get_induced_points
 
 def test_sparse_predictions():
     np.random.seed(0)
@@ -36,7 +30,7 @@ def test_sparse_predictions():
     s = np.random.rand(d, d)
     s = s.dot(s.T)  # Make s positive semidefinite
 
-    M, S, V = predict_wrapper(smgpr, m, s)
+    M, S, V = predict_gpr_wrapper(smgpr, m, s)
 
     # convert data to the struct expected by the MATLAB implementation
     lengthscales = np.stack([model.kern.lengthscales.value for model in smgpr.models])

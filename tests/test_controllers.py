@@ -11,9 +11,7 @@ octave.addpath(dir_path)
 
 float_type = settings.dtypes.float_type
 
-@autoflow((float_type,[None, None]), (float_type,[None, None]))
-def compute_action_wrapper(controller, m, s, squash=False):
-    return controller.compute_action(m, s, squash)
+from pilco.utils import compute_action_wrapper
 
 def test_rbf():
     np.random.seed(0)
