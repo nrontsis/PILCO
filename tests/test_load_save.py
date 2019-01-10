@@ -21,10 +21,15 @@ def test_load_save():
     Y0 = np.sin(X0).dot(A) + 1e-3*(np.random.rand(100, d) - 0.5)  #  Just something smooth
     pilco = PILCO(X0, Y0)
     pilco.optimize()
-
     save_pilco("", X0, Y0, pilco)
 
     pilco2 = load_pilco("")
+
+    pilco_sp = PILCO(X0, Y0, num_induced_points=15)
+    pilco_sp.optimize()
+    save_pilco("sparse_", X0, Y0, pilco_sp, sparse=True)
+
+    pilco_sp2 = load_pilco("sparse_", sparse=True)
 
     m = np.random.rand(1, d)  # But MATLAB defines it as m'
     s = np.random.rand(d, d)
@@ -32,6 +37,12 @@ def test_load_save():
 
     M1, S1, r1 = predict_wrapper(pilco, m, s, 5)
     M2, S2, r2 = predict_wrapper(pilco2, m, s, 5)
+    np.testing.assert_allclose(M1, M2, rtol=1e-6)
+    np.testing.assert_allclose(S1, S2, rtol=1e-6)
+    np.testing.assert_allclose(r1, r2, rtol=1e-6)
+
+    M1, S1, r1 = predict_wrapper(pilco_sp, m, s, 5)
+    M2, S2, r2 = predict_wrapper(pilco_sp2, m, s, 5)
     np.testing.assert_allclose(M1, M2, rtol=1e-6)
     np.testing.assert_allclose(S1, S2, rtol=1e-6)
     np.testing.assert_allclose(r1, r2, rtol=1e-6)
