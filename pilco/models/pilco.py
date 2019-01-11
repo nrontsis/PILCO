@@ -49,9 +49,9 @@ class PILCO(gpflow.models.Model):
         reward = self.predict(self.m_init, self.S_init, self.horizon)[2]
         return reward
 
-    def optimize(self):
+    def optimize(self, maxiter=50, disp=True):
         self.optimize_models()
-        self.optimize_policy()
+        self.optimize_policy(maxiter=maxiter, disp=disp)
 
     def optimize_models(self):
         '''
@@ -79,7 +79,7 @@ class PILCO(gpflow.models.Model):
         print('---Noises---')
         print(pd.DataFrame(data=noises))
 
-    def optimize_policy(self, maxiter=10):
+    def optimize_policy(self, maxiter=50, disp=True):
         '''
         Optimize controller's parameter's
         '''
@@ -91,7 +91,7 @@ class PILCO(gpflow.models.Model):
                            step_callback=None)
         else:
             self.optimizer = gpflow.train.ScipyOptimizer(method="L-BFGS-B")
-            self.optimizer.minimize(self, disp=True, maxiter=maxiter)
+            self.optimizer.minimize(self, disp=disp, maxiter=maxiter)
         end = time.time()
         print("Finished with Controller's optimization in %.1f seconds" % (end - start))
 
@@ -137,7 +137,7 @@ class PILCO(gpflow.models.Model):
         M_x.set_shape([1, self.state_dim]); S_x.set_shape([self.state_dim, self.state_dim])
         return M_x, S_x
 
-    def restart_controller(self, session, restarts=1, verbose=False):
+    def restart_controller(self, session, restarts=1, verbose=False, maxiter=50, disp=False):
         # Save values
         for i in range(restarts):
             values = self.read_values(session=session)
@@ -151,7 +151,7 @@ class PILCO(gpflow.models.Model):
                 print("Before restart", old_reward)
                 print("After restart before optimisation", self.compute_return())
             # Retrain
-            self.optimize_policy()
+            self.optimize_policy(maxiter=maxiter, disp=False)
 
             reward = self.compute_return()
             if verbose:
