@@ -2,7 +2,6 @@ import numpy as np
 import tensorflow as tf
 import gpflow
 import pandas as pd
-import copy
 
 from .mgpr import MGPR
 from .smgpr import SMGPR
@@ -140,32 +139,32 @@ class PILCO(gpflow.models.Model):
 
     def restart_controller(self, session, restarts=1, verbose=False):
         # Save values
-        values = self.read_values(session=session)
-        old_reward = copy.deepcopy(self.compute_return())
-
-        # Reinitialize values
-        self.controller.randomize()
-
-        # Make sure this stayed the same
-        if verbose:
-            print("Before restart", old_reward)
-            print("After restart before optimisation", self.compute_return())
-        # Retrain
-        self.optimize_policy()
-
-        reward = copy.deepcopy(self.compute_return())
-        if verbose:
-            print(old_reward)
-            print(reward)
-        # If restart successgul keep new values, otherwise return to the previous
-        if old_reward > reward:
-            if verbose: print("Restoring controller values")
-            self.assign(values)
-            if verbose: print(self.compute_return())
-        else:
-            print('Successful controller restart, predicted reward from ', old_reward, " to ", reward)
+        for i in range(restarts):
             values = self.read_values(session=session)
-            old_reward = reward
+            old_reward = self.compute_return()
+
+            # Reinitialize values
+            self.controller.randomize()
+
+            # Make sure this stayed the same
+            if verbose:
+                print("Before restart", old_reward)
+                print("After restart before optimisation", self.compute_return())
+            # Retrain
+            self.optimize_policy()
+
+            reward = self.compute_return()
+            if verbose:
+                print("After restart and optimisation", reward)
+            # If restart successgul keep new values, otherwise return to the previous
+            if old_reward > reward:
+                if verbose: print("Restoring controller values")
+                self.assign(values)
+                if verbose: print("Restored reward ", self.compute_return())
+            else:
+                if verbose: print('Successful controller restart, predicted reward from ', old_reward, " to ", reward)
+                values = self.read_values(session=session)
+                old_reward = reward
 
     @gpflow.autoflow()
     def compute_return(self):

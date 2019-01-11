@@ -118,28 +118,28 @@ class MGPR(gpflow.Parameterized):
         for r in range(restarts):
             for i in range(len(self.models)):
                 model = self.models[i]
-                optimizer = self.optimizers[i]
-                store_values = model.read_values(session=session) #read_values needs session, assign doesn't (?)
+                try:
+                    optimizer = self.optimizers[i]
+                except:
+                    print("No optimizer object has been initialized. ",
+                          "Run a pilco.optimize or (optimize_models) before attempting a restart")
+                store_values = model.read_values(session=session)
                 previous_ll = model.compute_log_likelihood()
                 if verbose: print('Likelihood before restart ', previous_ll)
-                # reinitialize all kernel parameters
+
                 model.kern.lengthscales.assign(1 + 0.01 * np.random.normal(size=model.kern.lengthscales.shape))
                 model.kern.variance.assign(1 + 0.01 * np.random.normal(size=model.kern.variance.shape))
                 model.likelihood.variance.assign(1 + 0.01 * np.random.normal())
-                # only want to optimize one model, and the optimizer exists since this is a restart
+
                 if verbose:
                     print('Likelihood after reinitialization ', model.compute_log_likelihood())
-                    # print(model)
                 optimizer._optimizer.minimize(session=session,
                             feed_dict=optimizer._gen_feed_dict(optimizer._model, None),
                             step_callback=None)
                 ll = model.compute_log_likelihood()
                 if verbose:
                     print("Likelihood after restarting and optimising ", ll)
-                    #model.anchor(session) #anchor is needed to print correct vaues of the parameters
-                    # print(model)
                 if  previous_ll > ll:
-                    # set values back to what they were
                     model.assign(store_values)
                     if verbose: print("Restoring previous values")
                 else:
