@@ -45,6 +45,28 @@ class DoublePendWrapper():
     def render(self):
         self.env.render()
 
+class SwimmerWrapper():
+    def __init__(self):
+        self.env = gym.make('Swimmer-v2')
+        self.action_space = self.env.action_space
+        self.observation_space = self.env.observation_space
+
+    def state_trans(self, s):
+        return np.hstack([[self.x],s])
+
+    def step(self, action):
+        ob, r, done, _ = self.env.step(action)
+        self.x += r
+        return self.state_trans(ob), r, done, {}
+
+    def reset(self):
+        ob =  self.env.reset()
+        self.x = 0.0
+        return self.state_trans(ob)
+
+    def render(self):
+        self.env.render()
+
 
 def rollout(env, pilco, policy, timesteps, verbose=False, random=False, SUBS=1):
     X = []; Y = []
@@ -84,6 +106,9 @@ def policy(env, pilco, x, random):
 def make_env(env_id, **kwargs):
     seed = kwargs.get('seed', 0)
     np.random.seed(seed)
+    linear = False
+    restarts = False
+    n_ind=None
     if env_id == 'InvertedPendulum-v2':
         env = gym.make(env_id)
         # Default_values
@@ -185,6 +210,25 @@ def make_env(env_id, **kwargs):
         N = 12
         T_sim = 130
         restarts=True
+    elif env_id == 'SwimmerWrapped':
+        env = SwimmerWrapper()
+        state_dim = 9
+        control_dim = 2
+        SUBS = 2
+        maxiter = 40
+        max_action = 1.0
+        m_init = np.reshape(np.zeros(state_dim), (1,state_dim))  # initial state mean
+        S_init = 0.5 * np.eye(state_dim)
+        target = np.array(np.zeros(state_dim))           # goal state, passed to the reward function
+        target[0] = 20
+        weights = 1e-6 * np.eye(state_dim)
+        weights[0,0] = 0.02
+        J = 4
+        N = 8
+        T = 30
+        bf = 30
+        linear = True
+        restarts=True
     elif env_id == 'Quadcopter':
         from quadcopter_env import Quadcopter
         env = Quadcopter()
@@ -223,26 +267,33 @@ def make_env(env_id, **kwargs):
     parameters['J'] = kwargs.get('J', J)
     parameters['N'] = kwargs.get('N', N)
     parameters['restarts'] = kwargs.get('restarts', restarts)
+    parameters['n_ind'] = kwargs.get('n_ind', n_ind)
+    parameters['linear'] = kwargs.get('linear', linear)
     try:
         parameters['T_sim'] = T_sim
     except:
-        paremeters['T_sim'] = T
+        parameters['T_sim'] = T
     parameters['seed'] = seed
     return env, parameters
 
 def run(env_id, **kwargs ):
+    # config = tf.ConfigProto()
+    # gpu_id = kwargs.get('gpu_id',"1")
+    # config.gpu_options.visible_device_list = gpu_id
+    # config.gpu_options.per_process_gpu_memory_fraction = 0.80
+    # sess = tf.Session(graph=tf.Graph(), config=config)
     sess = tf.Session(graph=tf.Graph())
     with tf.Session() as sess:
         # Make env
         env, parameters = make_env(env_id, **kwargs)
-        SUBS, bf, maxiter, max_action, target, weights, m_init, S_init, T, J, N, restarts, T_sim = \
+        SUBS, bf, maxiter, max_action, target, weights, m_init, S_init, T, J, N, restarts, linear, T_sim, n_ind = \
         parameters['SUBS'], parameters['bf'],                  \
         parameters['maxiter'], parameters['max_action'],       \
         parameters['target'], parameters['weights'],           \
         parameters['m_init'], parameters['S_init'],            \
         parameters['T'], parameters['J'],                      \
         parameters['N'], parameters['restarts'],               \
-        parameters['T_sim']
+        parameters['linear'], parameters['T_sim'], parameters['n_ind']
 
         # Initial random rollouts to generate a dataset
         X,Y = rollout(env, None, policy=policy, timesteps=T, random=True, SUBS=SUBS)
@@ -253,12 +304,15 @@ def run(env_id, **kwargs ):
 
         state_dim = Y.shape[1]
         control_dim = X.shape[1] - state_dim
-        controller = RbfController(state_dim=state_dim, control_dim=control_dim, num_basis_functions=bf, max_action=max_action)
-        # controller = LinearController(state_dim=state_dim, control_dim=control_dim, max_action=max_action)
+
+        if linear:
+            controller = LinearController(state_dim=state_dim, control_dim=control_dim, max_action=max_action)
+        else:
+            controller = RbfController(state_dim=state_dim, control_dim=control_dim, num_basis_functions=bf, max_action=max_action)
 
         R = ExponentialReward(state_dim=state_dim, t=target, W=weights)
 
-        pilco = PILCO(X, Y, controller=controller, horizon=T, reward=R, m_init=m_init, S_init=S_init)
+        pilco = PILCO(X, Y, controller=controller, horizon=T, reward=R, m_init=m_init, S_init=S_init, num_induced_points=n_ind)
 
         # Example of fixing a parameter, optional, for a linear controller only
         #pilco.controller.b = np.array([[0.0]])
@@ -272,8 +326,9 @@ def run(env_id, **kwargs ):
         for rollouts in range(N):
             print("**** ITERATION no", rollouts, " ****")
             pilco.optimize(maxiter=maxiter)
-            pilco.mgpr.try_restart(sess, restarts=1)
-            if restarts: pilco.restart_controller(sess, restarts=1)
+            if restarts:
+                pilco.mgpr.try_restart(sess, restarts=1)
+                pilco.restart_controller(sess, restarts=1)
             print("No of ops:", len(tf.get_default_graph().get_operations()))
 
             # Predict the trajectory, to check model's accuracy
@@ -296,5 +351,5 @@ def run(env_id, **kwargs ):
 
 if __name__ == '__main__':
     np.random.seed(0)
-    run('InvertedDoublePendulumWrapped')
+    run('SwimmerWrapped')
     #run('Quadcopter')
