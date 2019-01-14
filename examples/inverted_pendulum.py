@@ -91,6 +91,28 @@ class DoublePendWrapper():
     def render(self):
         self.env.render()
 
+class SwimmerWrapper():
+    def __init__(self):
+        self.env = gym.make('Swimmer-v2')
+        self.action_space = self.env.action_space
+        self.observation_space = self.env.observation_space
+
+    def state_trans(self, s):
+        return np.hstack([[self.x],s])
+
+    def step(self, action):
+        ob, r, done, _ = self.env.step(action)
+        self.x += r
+        return self.state_trans(ob), r, done, {}
+
+    def reset(self):
+        ob =  self.env.reset()
+        self.x = 0.0
+        return self.state_trans(ob)
+
+    def render(self):
+        self.env.render()
+
 
 def rollout(env, pilco, policy, timesteps, verbose=False, random=False, SUBS=1):
     X = []; Y = []
@@ -263,8 +285,13 @@ def make_env(env_id, **kwargs):
         N = 8
         T = 30
         bf = 30
+<<<<<<< HEAD
         linear = False
         restarts = True
+=======
+        linear = True
+        restarts=True
+>>>>>>> Started working on swimmer-v2
     elif env_id == 'Quadcopter':
         from quadcopter_env import Quadcopter
         env = Quadcopter()
