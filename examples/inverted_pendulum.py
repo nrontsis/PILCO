@@ -121,14 +121,11 @@ def rollout(env, pilco, policy, timesteps, verbose=False, random=False, SUBS=1):
         if timestep > 0:
             if done: break
         # env.render()
-        if timestep > 0:
-            if done: break
-        env.render()
         u = policy(env, pilco, x, random)
         for i in range(SUBS):
             x_new, _, done, _ = env.step(u)
             if done: break
-            env.render()
+            # env.render()
             #x_new += 0.001 * (np.random.rand()-0.5)
         if verbose:
             print("Action: ", u)
@@ -233,20 +230,8 @@ def make_env(env_id, **kwargs):
         weights[5,5]= 0.3
         weights[6,6]= 0.3
         weights[7,7]= 0.3
-        m_init = np.array([0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])[None, :]
-        S_init = 0.01 * np.eye(state_dim)
-        S_init[6,6] = 1 # ???
-        S_init[7,7] = 1
         T = 30
         J = 20
-=======
-        m_init = np.array([0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])[None, :]
-        S_init = 0.01 * np.eye(state_dim)
-        S_init[6,6] = 1 # ???
-        S_init[7,7] = 1
-        T = 30
-        J = 20
->>>>>>> Solved double inverted pendulum, using an environment wrapper
         N = 20
         restarts = True
     elif env_id == 'InvertedDoublePendulumWrapped':
@@ -285,13 +270,8 @@ def make_env(env_id, **kwargs):
         N = 8
         T = 30
         bf = 30
-<<<<<<< HEAD
         linear = False
         restarts = True
-=======
-        linear = True
-        restarts=True
->>>>>>> Started working on swimmer-v2
     elif env_id == 'Quadcopter':
         from quadcopter_env import Quadcopter
         env = Quadcopter()
