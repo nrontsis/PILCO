@@ -192,7 +192,6 @@ def make_env(env_id, **kwargs):
         # to (m_init, S_init)
         SUBS=3
         bf = 30
-        maxiter=3
         maxiter=50
         max_action=2.0
         target = np.array([1.0, 0.0, 0.0])

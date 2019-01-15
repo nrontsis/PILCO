@@ -44,6 +44,8 @@ class PILCO(gpflow.models.Model):
             self.S_init = S_init
         self.optimizer = None
 
+        self.optimizer = None
+
     @gpflow.name_scope('likelihood')
     def _build_likelihood(self):
         # This is for tuning controller's parameters
