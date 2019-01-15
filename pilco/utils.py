@@ -13,10 +13,6 @@ def predict_gpr_wrapper(mgpr, m, s):
     return mgpr.predict_on_noisy_inputs(m, s)
 
 @autoflow((float_type,[None, None]), (float_type,[None, None]))
-def compute_action_wrapper(pilco, m, s):
-    return pilco.controller.compute_action(m, s)
-
-@autoflow((float_type,[None, None]), (float_type,[None, None]))
 def compute_action_wrapper(controller, m, s, squash=False):
     return controller.compute_action(m, s, squash)
 
