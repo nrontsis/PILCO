@@ -74,12 +74,12 @@ def rollout(env, pilco, policy, timesteps, verbose=False, random=False, SUBS=1):
     for timestep in range(timesteps):
         if timestep > 0:
             if done: break
-        env.render()
+        # env.render()
         u = policy(env, pilco, x, random)
         for i in range(SUBS):
             x_new, _, done, _ = env.step(u)
             if done: break
-            env.render()
+            # env.render()
             #x_new += 0.001 * (np.random.rand()-0.5)
         if verbose:
             print("Action: ", u)
@@ -227,8 +227,8 @@ def make_env(env_id, **kwargs):
         N = 8
         T = 30
         bf = 30
-        linear = True
-        restarts=True
+        linear = False
+        restarts = True
     elif env_id == 'Quadcopter':
         from quadcopter_env import Quadcopter
         env = Quadcopter()
@@ -277,13 +277,12 @@ def make_env(env_id, **kwargs):
     return env, parameters
 
 def run(env_id, **kwargs ):
-    # config = tf.ConfigProto()
-    # gpu_id = kwargs.get('gpu_id',"1")
-    # config.gpu_options.visible_device_list = gpu_id
-    # config.gpu_options.per_process_gpu_memory_fraction = 0.80
-    # sess = tf.Session(graph=tf.Graph(), config=config)
-    sess = tf.Session(graph=tf.Graph())
-    with tf.Session() as sess:
+    config = tf.ConfigProto()
+    gpu_id = kwargs.get('gpu_id', "1")
+    config.gpu_options.visible_device_list = gpu_id
+    config.gpu_options.per_process_gpu_memory_fraction = 0.80
+    sess = tf.Session(graph=tf.Graph(), config=config)
+    with tf.Session(config=config) as sess:
         # Make env
         env, parameters = make_env(env_id, **kwargs)
         SUBS, bf, maxiter, max_action, target, weights, m_init, S_init, T, J, N, restarts, linear, T_sim, n_ind = \
