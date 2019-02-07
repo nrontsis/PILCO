@@ -35,8 +35,8 @@ def test_cascade():
     Y0 = np.sin(X0).dot(A) + 1e-3*(np.random.rand(100, d) - 0.5)  #  Just something smooth
     pilco = PILCO(X0, Y0)
     pilco.controller.max_action = e
-    pilco.optimize_models()
-    pilco.optimize_policy()
+    pilco.optimize_models(restarts=3)
+    pilco.optimize_policy(restarts=3)
 
     # Generate input
     m = np.random.rand(1, d)  # But MATLAB defines it as m'
