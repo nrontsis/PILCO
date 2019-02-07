@@ -35,7 +35,8 @@ def test_cascade():
     Y0 = np.sin(X0).dot(A) + 1e-3*(np.random.rand(100, d) - 0.5)  #  Just something smooth
     pilco = PILCO(X0, Y0)
     pilco.controller.max_action = e
-    pilco.optimize()
+    pilco.optimize_models(restarts=5)
+    pilco.optimize_policy(restarts=5)
 
     # Generate input
     m = np.random.rand(1, d)  # But MATLAB defines it as m'
@@ -80,8 +81,8 @@ def test_cascade():
     M_mat = M_mat[:,-1]
     S_mat = S_mat[:,:,-1]
 
-    np.testing.assert_allclose(M[0], M_mat.T, rtol=1e-4)
-    np.testing.assert_allclose(S, S_mat, rtol=1e-4)
+    np.testing.assert_allclose(M[0], M_mat.T, rtol=2e-4)
+    np.testing.assert_allclose(S, S_mat, rtol=2e-4)
 
 
 if __name__ == '__main__':

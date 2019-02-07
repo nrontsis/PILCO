@@ -2,6 +2,7 @@ import numpy as np
 import tensorflow as tf
 import gpflow
 import pandas as pd
+import time
 
 from .mgpr import MGPR
 from .smgpr import SMGPR
@@ -32,7 +33,7 @@ class PILCO(gpflow.models.Model):
             self.reward = rewards.ExponentialReward(self.state_dim)
         else:
             self.reward = reward
-        
+
         if m_init is None or S_init is None:
             # If the user has not provided an initial state for the rollouts,
             # then define it as the first state in the dataset.
@@ -41,6 +42,7 @@ class PILCO(gpflow.models.Model):
         else:
             self.m_init = m_init
             self.S_init = S_init
+        self.optimizer = None
 
     @gpflow.name_scope('likelihood')
     def _build_likelihood(self):
@@ -48,21 +50,13 @@ class PILCO(gpflow.models.Model):
         reward = self.predict(self.m_init, self.S_init, self.horizon)[2]
         return reward
 
-    def optimize(self):
+    def optimize_models(self, maxiter=200, restarts=1):
         '''
-        Optimizes both GP's and controller's hypeparamemeters.
+        Optimize GP models
         '''
-        import time
-        start = time.time()
-        self.mgpr.optimize()
-        end = time.time()
-        print("Finished with GPs' optimization in %.1f seconds" % (end - start))
-        start = time.time()
-        optimizer = gpflow.train.ScipyOptimizer(options={'maxfun': 500})
-        optimizer.minimize(self, disp=True)
-        end = time.time()
-        print("Finished with Controller's optimization in5%.1f seconds" % (end - start))
-
+        self.mgpr.optimize(restarts=restarts)
+        # Print the resulting model parameters
+        # ToDo: only do this if verbosity is large enough
         lengthscales = {}; variances = {}; noises = {};
         i = 0
         for model in self.mgpr.models:
@@ -70,7 +64,6 @@ class PILCO(gpflow.models.Model):
             variances['GP' + str(i)] = np.array([model.kern.variance.value])
             noises['GP' + str(i)] = np.array([model.likelihood.variance.value])
             i += 1
-
         print('-----Learned models------')
         pd.set_option('precision', 3)
         print('---Lengthscales---')
@@ -79,6 +72,39 @@ class PILCO(gpflow.models.Model):
         print(pd.DataFrame(data=variances))
         print('---Noises---')
         print(pd.DataFrame(data=noises))
+
+    def optimize_policy(self, maxiter=50, restarts=1):
+        '''
+        Optimize controller's parameter's
+        '''
+        start = time.time()
+        if not self.optimizer:
+            self.optimizer = gpflow.train.ScipyOptimizer(method="L-BFGS-B")
+            start = time.time()
+            self.optimizer.minimize(self, maxiter=maxiter)
+            end = time.time()
+            print("Controller's optimization: done in %.1f seconds with reward=%.3f." % (end - start, self.compute_reward()))
+            restarts -= 1
+
+        session = self.optimizer._model.enquire_session(None)
+        best_parameters = self.read_values(session=session)
+        best_reward = self.compute_reward()
+        for restart in range(restarts):
+            self.controller.randomize()
+            start = time.time()
+            self.optimizer._optimizer.minimize(session=session,
+                        feed_dict=self.optimizer._gen_feed_dict(self.optimizer._model, None),
+                        step_callback=None)
+            end = time.time()
+            reward = self.compute_reward()
+            print("Controller's optimization: done in %.1f seconds with reward=%.3f." % (end - start, self.compute_reward()))
+            if reward > best_reward:
+                best_parameters = self.read_values(session=session)
+                best_reward = reward
+
+        self.assign(best_parameters)
+
+        end = time.time()
 
     @gpflow.autoflow((float_type,[None, None]))
     def compute_action(self, x_m):
@@ -121,3 +147,7 @@ class PILCO(gpflow.models.Model):
         # While-loop requires the shapes of the outputs to be fixed
         M_x.set_shape([1, self.state_dim]); S_x.set_shape([self.state_dim, self.state_dim])
         return M_x, S_x
+
+    @gpflow.autoflow()
+    def compute_reward(self):
+        return self._build_likelihood()
