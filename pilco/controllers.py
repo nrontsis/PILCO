@@ -55,9 +55,9 @@ class LinearController(gpflow.Parameterized):
         return M, S, V
 
     def randomize(self):
-        print("Randomising controller")
-        self.W.assign(np.random.normal(size=self.W.shape))
-        self.b.assign(np.random.normal(size=self.b.shape))
+        mean = 0; sigma = 1
+        self.W.assign(mean + sigma*np.random.normal(size=self.W.shape))
+        self.b.assign(mean + sigma*np.random.normal(size=self.b.shape))
 
 
 class FakeGPR(gpflow.Parameterized):
@@ -107,6 +107,8 @@ class RbfController(MGPR):
     def randomize(self):
         print("Randomising controller")
         for m in self.models:
-            m.X.assign(0.1 * np.random.normal(size=m.X.shape))
-            m.Y.assign(0.1 * np.random.normal(size=m.Y.shape))
-            m.kern.lengthscales.assign(0.1 * np.random.normal(size=m.kern.lengthscales.shape) + 1)
+            mean = 0; sigma = 0.1
+            m.X.assign(mean + sigma*np.random.normal(size=m.X.shape))
+            m.Y.assign(mean + sigma*np.random.normal(size=m.Y.shape))
+            mean = 1; sigma = 0.1
+            m.kern.lengthscales.assign(mean + sigma*np.random.normal(size=m.kern.lengthscales.shape))

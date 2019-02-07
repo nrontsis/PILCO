@@ -53,9 +53,8 @@ with tf.Session(graph=tf.Graph()) as sess:
     #pilco.controller.b.trainable = False
 
     for rollouts in range(3):
-        pilco.optimize()
-        # pilco.mgpr.try_restart(sess, restarts=2, verbose=True)
-        # pilco.restart_controller(sess, restarts=1, verbose=True)
+        pilco.optimize_models()
+        pilco.optimize_policy()
         import pdb; pdb.set_trace()
         X_new, Y_new = rollout(policy=pilco_policy, timesteps=100)
         print("No of ops:", len(tf.get_default_graph().get_operations()))

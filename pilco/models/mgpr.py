@@ -3,6 +3,15 @@ import gpflow
 import numpy as np
 float_type = gpflow.settings.dtypes.float_type
 
+def randomize(model):
+    mean = 1; sigma = 0.01
+
+    model.kern.lengthscales.assign(
+        mean + sigma*np.random.normal(size=model.kern.lengthscales.shape))
+    model.kern.variance.assign(
+        mean + sigma*np.random.normal(size=model.kern.variance.shape))
+    model.likelihood.variance.assign(
+        mean + sigma*np.random.normal())
 
 class MGPR(gpflow.Parameterized):
     def __init__(self, X, Y, name=None):
@@ -28,17 +37,29 @@ class MGPR(gpflow.Parameterized):
             self.models[i].X = X
             self.models[i].Y = Y[:, i:i+1]
 
-    def optimize(self):
-        if len(self.optimizers) == 0:
+    def optimize(self, restarts=1):
+        if len(self.optimizers) == 0:  # This is the first call to optimize();
             for model in self.models:
+                # Create an gpflow.train.ScipyOptimizer object for every model embedded in mgpr
                 optimizer = gpflow.train.ScipyOptimizer(method='L-BFGS-B')
                 optimizer.minimize(model)
                 self.optimizers.append(optimizer)
-        else:
-            for optimizer in self.optimizers:
-                optimizer._optimizer.minimize(session=optimizer._model.enquire_session(None),
-                           feed_dict=optimizer._gen_feed_dict(optimizer._model, None),
-                           step_callback=None)
+                restarts -= 1 
+
+        for optimizer in self.optimizers:
+            session = optimizer._model.enquire_session(None)
+            best_parameters = model.read_values(session=session)
+            best_likelihood = model.compute_log_likelihood()
+            for restart in range(restarts):
+                randomize(model)
+                optimizer._optimizer.minimize(session=session,
+                            feed_dict=optimizer._gen_feed_dict(optimizer._model, None),
+                            step_callback=None)
+                likelihood = model.compute_log_likelihood()
+                if likelihood > best_likelihood:
+                    best_parameters = model.read_values(session=session)
+                    best_likelihood = likelihood
+            model.assign(best_parameters)
 
     def predict_on_noisy_inputs(self, m, s):
         iK, beta = self.calculate_factorizations()
@@ -113,40 +134,6 @@ class MGPR(gpflow.Parameterized):
         S = S - M @ tf.transpose(M)
 
         return tf.transpose(M), S, tf.transpose(V)
-
-    def try_restart(self, session, restarts=1, verbose=False):
-        for r in range(restarts):
-            for i in range(len(self.models)):
-                model = self.models[i]
-                try:
-                    optimizer = self.optimizers[i]
-                except:
-                    print("No optimizer object has been initialized. ",
-                          "Run a pilco.optimize or (optimize_models) before attempting a restart")
-                store_values = model.read_values(session=session)
-                previous_ll = model.compute_log_likelihood()
-                if verbose: print('Likelihood before restart ', previous_ll)
-
-                model.kern.lengthscales.assign(1 + 0.01 * np.random.normal(size=model.kern.lengthscales.shape))
-                model.kern.variance.assign(1 + 0.01 * np.random.normal(size=model.kern.variance.shape))
-                model.likelihood.variance.assign(1 + 0.01 * np.random.normal())
-
-                if verbose:
-                    print('Likelihood after reinitialization ', model.compute_log_likelihood())
-                optimizer._optimizer.minimize(session=session,
-                            feed_dict=optimizer._gen_feed_dict(optimizer._model, None),
-                            step_callback=None)
-                ll = model.compute_log_likelihood()
-                if verbose:
-                    print("Likelihood after restarting and optimising ", ll)
-                if  previous_ll > ll:
-                    model.assign(store_values)
-                    if verbose: print("Restoring previous values")
-                else:
-                    store_values = model.read_values(session=session)
-                    print("Successful model", i ," restart, log likelihood from ", previous_ll, " to ", ll)
-                    previous_ll = ll
-                if verbose: print("Keeping the best of the two ", model.compute_log_likelihood())
 
     def centralized_input(self, m):
         return self.X - m
