@@ -46,7 +46,7 @@ class MGPR(gpflow.Parameterized):
                 self.optimizers.append(optimizer)
                 restarts -= 1 
 
-        for optimizer in self.optimizers:
+        for model, optimizer in zip(self.models, self.optimizers):
             session = optimizer._model.enquire_session(None)
             best_parameters = model.read_values(session=session)
             best_likelihood = model.compute_log_likelihood()
