@@ -1,5 +1,6 @@
 import numpy as np
 import gym
+import pybullet_envs
 from pilco.models import PILCO
 from pilco.controllers import RbfController, LinearController
 from pilco.rewards import ExponentialReward
@@ -7,11 +8,10 @@ import tensorflow as tf
 from tensorflow import logging
 np.random.seed(0)
 
-
 def rollout(policy, timesteps):
     X = []; Y = []
     env.reset()
-    x, _, _, _ = env.step(0)
+    x, _, _, _ = env.step([0.])
     for timestep in range(timesteps):
         env.render()
         u = policy(x)
@@ -29,7 +29,8 @@ def pilco_policy(x):
     return pilco.compute_action(x[None, :])[0, :]
 
 with tf.Session(graph=tf.Graph()) as sess:
-    env = gym.make('InvertedPendulum-v2')
+    env = gym.make('InvertedPendulumBulletEnv-v0')
+    _ = env.render(mode='human')
     # Initial random rollouts to generate a dataset
     X,Y = rollout(policy=random_policy, timesteps=40)
     for i in range(1,3):
@@ -51,10 +52,10 @@ with tf.Session(graph=tf.Graph()) as sess:
     # Example of fixing a parameter, optional, for a linear controller only
     #pilco.controller.b = np.array([[0.0]])
     #pilco.controller.b.trainable = False
-
     for rollouts in range(3):
         pilco.optimize_models()
         pilco.optimize_policy()
+        print('If you want to continue, please type "continue"')
         import pdb; pdb.set_trace()
         X_new, Y_new = rollout(policy=pilco_policy, timesteps=100)
         print("No of ops:", len(tf.get_default_graph().get_operations()))
