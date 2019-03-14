@@ -22,7 +22,7 @@ class ExponentialReward(Reward):
         if W is not None:
             self.W = Param(np.reshape(W, (state_dim, state_dim)), trainable=False)
         else:
-            self.W = Param(np.ones((state_dim, state_dim)), trainable=False)
+            self.W = Param(np.eye(state_dim, state_dim), trainable=False)
         if t is not None:
             self.t = Param(np.reshape(t, (1, state_dim)), trainable=False)
         else:
