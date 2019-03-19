@@ -6,12 +6,13 @@ from pilco.controllers import RbfController, LinearController
 from pilco.rewards import ExponentialReward
 import tensorflow as tf
 from tensorflow import logging
+from utils import rollout, policy
 np.random.seed(0)
 
 # Introduces a simple wrapper for the gym environment
 # Reduces dimensions, avoids non-smooth parts of the state space that we can't model
 # Uses a different number of timesteps for planning and testing
-# Introduces priors 
+# Introduces priors
 
 
 class DoublePendWrapper():
@@ -40,32 +41,6 @@ class DoublePendWrapper():
         self.env.render()
 
 
-def rollout(env, pilco, policy, timesteps, verbose=False, random=False, SUBS=1):
-    X = []; Y = []
-    x = env.reset()
-    for timestep in range(timesteps):
-        if timestep > 0:
-            if done: break
-        env.render()
-        u = policy(env, pilco, x, random)
-        for i in range(SUBS):
-            x_new, _, done, _ = env.step(u)
-            if done: break
-            env.render()
-        if verbose:
-            print("Action: ", u)
-            print("State : ",  x_new)
-        X.append(np.hstack((x, u)))
-        Y.append(x_new - x)
-        x = x_new
-    return np.stack(X), np.stack(Y)
-
-def policy(env, pilco, x, random):
-    if random:
-        return env.action_space.sample()
-    else:
-        return pilco.compute_action(x[None, :])[0, :]
-
 SUBS = 1
 bf = 40
 maxiter=80
@@ -89,9 +64,9 @@ with tf.Session() as sess:
     env = DoublePendWrapper()
 
     # Initial random rollouts to generate a dataset
-    X,Y = rollout(env, None, policy=policy, timesteps=T, random=True, SUBS=SUBS)
+    X,Y = rollout(env, None, timesteps=T, random=True, SUBS=SUBS)
     for i in range(1,J):
-        X_, Y_ = rollout(env, None, policy=policy, timesteps=T, random=True, SUBS=SUBS, verbose=True)
+        X_, Y_ = rollout(env, None, timesteps=T, random=True, SUBS=SUBS, verbose=True)
         X = np.vstack((X, X_))
         Y = np.vstack((Y, Y_))
 
@@ -116,7 +91,7 @@ with tf.Session() as sess:
         pilco.optimize_models(maxiter=maxiter, restarts=2)
         pilco.optimize_policy(maxiter=maxiter, restarts=2)
 
-        X_new, Y_new = rollout(env, pilco, policy=policy, timesteps=T_sim, verbose=True, SUBS=SUBS)
+        X_new, Y_new = rollout(env, pilco, timesteps=T_sim, verbose=True, SUBS=SUBS)
 
         # Since we had decide on the various parameters of the reward function
         # we might want to verify that it behaves as expected by inspection

@@ -5,6 +5,7 @@ from pilco.controllers import RbfController, LinearController
 from pilco.rewards import ExponentialReward, LinearReward, CombinedRewards
 import tensorflow as tf
 from tensorflow import logging
+from utils import rollout, policy
 np.random.seed(0)
 
 # Uses a wrapper for the Swimmer
@@ -33,32 +34,6 @@ class SwimmerWrapper():
     def render(self):
         self.env.render()
 
-
-def rollout(env, pilco, policy, timesteps, verbose=False, random=False, SUBS=1):
-    X = []; Y = []
-    x = env.reset()
-    for timestep in range(timesteps):
-        if timestep > 0:
-            if done: break
-        env.render()
-        u = policy(env, pilco, x, random)
-        for i in range(SUBS):
-            x_new, _, done, _ = env.step(u)
-            if done: break
-            env.render()
-        if verbose:
-            print("Action: ", u)
-            print("State : ",  x_new)
-        X.append(np.hstack((x, u)))
-        Y.append(x_new - x)
-        x = x_new
-    return np.stack(X), np.stack(Y)
-
-def policy(env, pilco, x, random):
-    if random:
-        return env.action_space.sample()
-    else:
-        return pilco.compute_action(x[None, :])[0, :]
 
 with tf.Session() as sess:
     env = SwimmerWrapper()
@@ -97,9 +72,9 @@ with tf.Session() as sess:
     R = CombinedRewards(state_dim, [R2, R3, R4, R5, R6], coefs=[1.0, -1.0, -1.0, -1.0, -1.0])
 
     # Initial random rollouts to generate a dataset
-    X,Y = rollout(env, None, policy=policy, timesteps=T, random=True, SUBS=SUBS)
+    X,Y = rollout(env, None, timesteps=T, random=True, SUBS=SUBS)
     for i in range(1,J):
-        X_, Y_ = rollout(env, None, policy=policy, timesteps=T, random=True, SUBS=SUBS, verbose=True)
+        X_, Y_ = rollout(env, None, timesteps=T, random=True, SUBS=SUBS, verbose=True)
         X = np.vstack((X, X_))
         Y = np.vstack((Y, Y_))
 
@@ -117,7 +92,7 @@ with tf.Session() as sess:
         pilco.optimize_models(maxiter=maxiter)
         pilco.optimize_policy(maxiter=maxiter, restarts=2)
 
-        X_new, Y_new = rollout(env, pilco, policy=policy, timesteps=T_sim, verbose=True, SUBS=SUBS)
+        X_new, Y_new = rollout(env, pilco, timesteps=T_sim, verbose=True, SUBS=SUBS)
 
         # Update dataset
         X = np.vstack((X, X_new[:T,:])); Y = np.vstack((Y, Y_new[:T,:]))
