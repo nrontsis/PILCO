@@ -22,7 +22,7 @@ class ExponentialReward(Reward):
         if W is not None:
             self.W = Param(np.reshape(W, (state_dim, state_dim)), trainable=False)
         else:
-            self.W = Param(np.eye(state_dim, state_dim), trainable=False)
+            self.W = Param(np.eye(state_dim), trainable=False)
         if t is not None:
             self.t = Param(np.reshape(t, (1, state_dim)), trainable=False)
         else:
@@ -61,4 +61,37 @@ class ExponentialReward(Reward):
         sR = r2 - muR @ muR
         muR.set_shape([1, 1])
         sR.set_shape([1, 1])
+        return muR, sR
+
+class LinearReward(Reward):
+    def __init__(self, state_dim, W):
+        Reward.__init__(self)
+        self.state_dim = state_dim
+        self.W = Param(np.reshape(W, (state_dim, 1)), trainable=False)
+
+    @params_as_tensors
+    def compute_reward(self, m, s):
+        muR = m @ self.W
+        sR = tf.transpose(self.W) @ s @ self.W
+        return muR, sR
+
+
+class CombinedRewards(Reward):
+    def __init__(self, state_dim, rewards=[], coefs=None):
+        Reward.__init__(self)
+        self.state_dim = state_dim
+        self.base_rewards = rewards
+        if coefs is not None:
+            self.coefs = coefs
+        else:
+            self.coefs = np.ones(len(list))
+
+    @params_as_tensors
+    def compute_reward(self, m, s):
+        muR = 0
+        sR = 0
+        for c,r in enumerate(self.base_rewards):
+            tmp1, tmp2 = r.compute_reward(m, s)
+            muR += self.coefs[c] * tmp1
+            sR += self.coefs[c]**2 * tmp2
         return muR, sR

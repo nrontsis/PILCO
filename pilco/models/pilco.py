@@ -87,6 +87,13 @@ class PILCO(gpflow.models.Model):
             restarts -= 1
 
         session = self.optimizer._model.enquire_session(None)
+        if restarts > 0:
+            start = time.time()
+            self.optimizer._optimizer.minimize(session=session,
+                        feed_dict=self.optimizer._gen_feed_dict(self.optimizer._model, None),
+                        step_callback=None)
+            end = time.time()
+            restarts -= 1
         best_parameters = self.read_values(session=session)
         best_reward = self.compute_reward()
         for restart in range(restarts):

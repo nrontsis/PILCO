@@ -10,8 +10,9 @@ def randomize(model):
         mean + sigma*np.random.normal(size=model.kern.lengthscales.shape))
     model.kern.variance.assign(
         mean + sigma*np.random.normal(size=model.kern.variance.shape))
-    model.likelihood.variance.assign(
-        mean + sigma*np.random.normal())
+    if model.likelihood.variance.trainable:
+        model.likelihood.variance.assign(
+            mean + sigma*np.random.normal())
 
 class MGPR(gpflow.Parameterized):
     def __init__(self, X, Y, name=None):
@@ -29,6 +30,8 @@ class MGPR(gpflow.Parameterized):
         for i in range(self.num_outputs):
             kern = gpflow.kernels.RBF(input_dim=X.shape[1], ARD=True)
             #TODO: Maybe fix noise for better conditioning
+            kern.lengthscales.prior = gpflow.priors.Gamma(1,10) # priors have to be included before
+            kern.variance.prior = gpflow.priors.Gamma(1.5,2)    # before the model gets compiled
             self.models.append(gpflow.models.GPR(X, Y[:, i:i+1], kern))
             self.models[i].clear(); self.models[i].compile()
 
@@ -44,7 +47,7 @@ class MGPR(gpflow.Parameterized):
                 optimizer = gpflow.train.ScipyOptimizer(method='L-BFGS-B')
                 optimizer.minimize(model)
                 self.optimizers.append(optimizer)
-                restarts -= 1 
+                restarts -= 1
 
         for model, optimizer in zip(self.models, self.optimizers):
             session = optimizer._model.enquire_session(None)

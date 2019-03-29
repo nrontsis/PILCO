@@ -5,3 +5,4 @@ __pycache__
 *.swp
 octave-workspace
 *.egg
+examples/.ipynb_checkpoints/
