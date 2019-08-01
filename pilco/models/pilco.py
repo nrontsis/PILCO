@@ -38,7 +38,7 @@ class PILCO(gpflow.models.Model):
             # If the user has not provided an initial state for the rollouts,
             # then define it as the first state in the dataset.
             self.m_init = X[0:1, 0:self.state_dim]
-            self.S_init = np.diag(np.ones(self.state_dim) * 0.1)
+            self.S_init = 0.1 * np.eye(state_dim)
         else:
             self.m_init = m_init
             self.S_init = S_init
@@ -93,6 +93,7 @@ class PILCO(gpflow.models.Model):
                         feed_dict=self.optimizer._gen_feed_dict(self.optimizer._model, None),
                         step_callback=None)
             end = time.time()
+            print("Controller's optimization: done in %.1f seconds with reward=%.3f." % (end - start, self.compute_reward()))
             restarts -= 1
         best_parameters = self.read_values(session=session)
         best_reward = self.compute_reward()
@@ -106,6 +107,7 @@ class PILCO(gpflow.models.Model):
             reward = self.compute_reward()
             print("Controller's optimization: done in %.1f seconds with reward=%.3f." % (end - start, self.compute_reward()))
             if reward > best_reward:
+                print("Successful Controller Restart")
                 best_parameters = self.read_values(session=session)
                 best_reward = reward
 

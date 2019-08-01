@@ -16,7 +16,11 @@ First install the package by running:
 python setup.py develop
 ```
 
-Then you can run the example of using PILCO in [`OpenAI gym`](https://gym.openai.com) by running
+Then you can run the example of using PILCO in [`OpenAI gym`](https://gym.openai.com) by running:
+```
+python examples/mountain_car.py
+```
+or (requires [`Mujoco`](https://github.com/openai/mujoco-py)):
 ```
 python examples/inverted_pendulum.py
 ```
@@ -26,9 +30,9 @@ python examples/inverted_pendulum.py
 
 The following people have been involved in the development of this package:
 * [Nikitas Rontsis](https://github.com/nrontsis)
-* Kyriakos Polymenakos
+* [Kyriakos Polymenakos](https://github.com/kyr-pol)
 
 ## References
 
-See the following publications for a description of the algorithm: [1](https://ieeexplore.ieee.org/abstract/document/6654139/), [2](http://mlg.eng.cam.ac.uk/pub/pdf/DeiRas11.pdf), 
+See the following publications for a description of the algorithm: [1](https://ieeexplore.ieee.org/abstract/document/6654139/), [2](http://mlg.eng.cam.ac.uk/pub/pdf/DeiRas11.pdf),
 [3](https://pdfs.semanticscholar.org/c9f2/1b84149991f4d547b3f0f625f710750ad8d9.pdf)
