@@ -25,6 +25,7 @@ def rollout(env, pilco, timesteps, verbose=True, random=False, SUBS=1, render=Tr
         if done: break
     return np.stack(X), np.stack(Y)
 
+
 class Normalised_Env():
     def __init__(self, env_id, m, std):
         self.env = gym.make(env_id).env
@@ -47,11 +48,17 @@ class Normalised_Env():
     def render(self):
         self.env.render()
 
+
 def policy(env, pilco, x, random):
     if random:
         return env.action_space.sample()
     else:
         return pilco.compute_action(x[None, :])[0, :]
+
+
+@autoflow((float_type,[None, None]), (float_type,[None, None]))
+def propagate_wrapper(pilco, m, s):
+    return pilco.propagate(m, s)
 
 
 @autoflow((float_type,[None, None]), (float_type,[None, None]))

@@ -36,3 +36,7 @@ The following people have been involved in the development of this package:
 
 See the following publications for a description of the algorithm: [1](https://ieeexplore.ieee.org/abstract/document/6654139/), [2](http://mlg.eng.cam.ac.uk/pub/pdf/DeiRas11.pdf),
 [3](https://pdfs.semanticscholar.org/c9f2/1b84149991f4d547b3f0f625f710750ad8d9.pdf)
+
+## Hyperparameter and Troubleshooting Tips
+
+Check the notebook [here](https://github.com/nrontsis/PILCO/blob/master/examples/Hyperparameter%20setting%20and%20troubleshooting%20tips.ipynb)

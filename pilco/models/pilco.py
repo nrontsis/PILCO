@@ -38,7 +38,7 @@ class PILCO(gpflow.models.Model):
             # If the user has not provided an initial state for the rollouts,
             # then define it as the first state in the dataset.
             self.m_init = X[0:1, 0:self.state_dim]
-            self.S_init = 0.1 * np.eye(state_dim)
+            self.S_init = 0.1 * np.eye(self.state_dim)
         else:
             self.m_init = m_init
             self.S_init = S_init
