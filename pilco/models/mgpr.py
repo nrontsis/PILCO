@@ -47,7 +47,10 @@ class MGPR(gpflow.Parameterized):
                 optimizer = gpflow.train.ScipyOptimizer(method='L-BFGS-B')
                 optimizer.minimize(model)
                 self.optimizers.append(optimizer)
-                restarts -= 1
+        else:
+            for model, optimizer in zip(self.models, self.optimizers):
+                session = optimizer._model.enquire_session(None)
+                optimizer.minimize(model, session=session)
 
         for model, optimizer in zip(self.models, self.optimizers):
             session = optimizer._model.enquire_session(None)
@@ -55,9 +58,7 @@ class MGPR(gpflow.Parameterized):
             best_likelihood = model.compute_log_likelihood()
             for restart in range(restarts):
                 randomize(model)
-                optimizer._optimizer.minimize(session=session,
-                            feed_dict=optimizer._gen_feed_dict(optimizer._model, None),
-                            step_callback=None)
+                optimizer.minimize(model, session=session)
                 likelihood = model.compute_log_likelihood()
                 if likelihood > best_likelihood:
                     best_parameters = model.read_values(session=session)

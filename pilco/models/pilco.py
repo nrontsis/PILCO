@@ -80,28 +80,21 @@ class PILCO(gpflow.models.Model):
         start = time.time()
         if not self.optimizer:
             self.optimizer = gpflow.train.ScipyOptimizer(method="L-BFGS-B")
-            start = time.time()
             self.optimizer.minimize(self, maxiter=maxiter)
-            end = time.time()
-            print("Controller's optimization: done in %.1f seconds with reward=%.3f." % (end - start, self.compute_reward()))
-            restarts -= 1
+        else:
+            session = self.optimizer._model.enquire_session(None)
+            self.optimizer.minimize(self, maxiter=maxiter, session=session)
+        end = time.time()
+        print("Controller's optimization: done in %.1f seconds with reward=%.3f." % (end - start, self.compute_reward()))
+        restarts -= 1
 
         session = self.optimizer._model.enquire_session(None)
-        if restarts > 0:
-            start = time.time()
-            self.optimizer._optimizer.minimize(session=session,
-                        feed_dict=self.optimizer._gen_feed_dict(self.optimizer._model, None),
-                        step_callback=None)
-            end = time.time()
-            restarts -= 1
         best_parameters = self.read_values(session=session)
         best_reward = self.compute_reward()
         for restart in range(restarts):
             self.controller.randomize()
             start = time.time()
-            self.optimizer._optimizer.minimize(session=session,
-                        feed_dict=self.optimizer._gen_feed_dict(self.optimizer._model, None),
-                        step_callback=None)
+            self.optimizer.minimize(self, maxiter=maxiter, session=session)
             end = time.time()
             reward = self.compute_reward()
             print("Controller's optimization: done in %.1f seconds with reward=%.3f." % (end - start, self.compute_reward()))
