@@ -108,7 +108,7 @@ class RbfController(MGPR):
         print("Randomising controller")
         for m in self.models:
             mean = 0; sigma = 0.1
-            m.X.assign(mean + sigma*np.random.normal(size=m.X.shape))
-            m.Y.assign(mean + sigma*np.random.normal(size=m.Y.shape))
+            m.X.assign(mean + sigma * np.random.normal(size=m.X.shape))
+            m.Y.assign(mean + self.max_action * np.random.normal(size=m.Y.shape))
             mean = 1; sigma = 0.1
             m.kern.lengthscales.assign(mean + sigma*np.random.normal(size=m.kern.lengthscales.shape))

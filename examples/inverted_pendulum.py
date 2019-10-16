@@ -7,7 +7,7 @@ import tensorflow as tf
 from tensorflow import logging
 np.random.seed(0)
 
-from utils import rollout, policy
+from pilco.utils import rollout, policy
 
 with tf.Session(graph=tf.Graph()) as sess:
     env = gym.make('InvertedPendulum-v2')

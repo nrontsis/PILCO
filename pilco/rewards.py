@@ -71,7 +71,7 @@ class LinearReward(Reward):
 
     @params_as_tensors
     def compute_reward(self, m, s):
-        muR = m @ self.W
+        muR = tf.reshape(m, (1, self.state_dim)) @ self.W
         sR = tf.transpose(self.W) @ s @ self.W
         return muR, sR
 
@@ -82,9 +82,10 @@ class CombinedRewards(Reward):
         self.state_dim = state_dim
         self.base_rewards = rewards
         if coefs is not None:
-            self.coefs = coefs
+            # self.coefs = gpflow.params.Parameter(coefs, dtype=float_type)
+            self.coefs = tf.Variable(coefs, dtype=float_type, trainable=False)
         else:
-            self.coefs = np.ones(len(list))
+            self.coefs = tf.Variable(np.ones(len(rewards)), dtype=float_type, trainable=False)
 
     @params_as_tensors
     def compute_reward(self, m, s):

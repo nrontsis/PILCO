@@ -5,7 +5,7 @@ from pilco.controllers import RbfController, LinearController
 from pilco.rewards import ExponentialReward
 import tensorflow as tf
 from tensorflow import logging
-from utils import rollout, policy
+from pilco.utils import rollout, policy
 np.random.seed(0)
 
 # NEEDS a different initialisation than the one in gym (change the reset() method),

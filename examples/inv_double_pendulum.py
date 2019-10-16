@@ -6,7 +6,7 @@ from pilco.controllers import RbfController, LinearController
 from pilco.rewards import ExponentialReward
 import tensorflow as tf
 from tensorflow import logging
-from utils import rollout, policy
+from pilco.utils import rollout, policy
 np.random.seed(0)
 
 # Introduces a simple wrapper for the gym environment
