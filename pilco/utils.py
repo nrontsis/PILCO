@@ -2,6 +2,7 @@ import numpy as np
 from gpflow import autoflow
 from gpflow import settings
 import pilco
+import gym
 float_type = settings.dtypes.float_type
 
 
@@ -50,3 +51,25 @@ def compute_action_wrapper(pilco, m, s):
 @autoflow((float_type, [None, None]), (float_type, [None, None]))
 def reward_wrapper(reward, m, s):
     return reward.compute_reward(m, s)
+
+class Normalised_Env():
+    def __init__(self, env_id, m, std):
+        self.env = gym.make(env_id).env
+        self.action_space = self.env.action_space
+        self.observation_space = self.env.observation_space
+        self.m = m
+        self.std = std
+
+    def state_trans(self, x):
+        return np.divide(x-self.m, self.std)
+
+    def step(self, action):
+        ob, r, done, _ = self.env.step(action)
+        return self.state_trans(ob), r, done, {}
+
+    def reset(self):
+        ob =  self.env.reset()
+        return self.state_trans(ob)
+
+    def render(self):
+        self.env.render()
