@@ -98,7 +98,7 @@ def pilco_run(env, N, J,
             X_new, Y_new, _, _ = rollout(env, pilco, timesteps=sim_timesteps, SUBS=SUBS, verbose=True)
 
             cur_rew = 0
-            X = np.vstack((X, X_new[:sim_timesteps,:])); Y = np.vstack((Y, Y_new[:sim_timesteps,:]))
+            X = np.vstack((X, X_new[:plan_timesteps,:])); Y = np.vstack((Y, Y_new[:plan_timesteps,:]))
             pilco.mgpr.set_XY(X, Y)
             if logging:
                 if eval_max_timesteps is None:
