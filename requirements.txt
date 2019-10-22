@@ -1,1 +1,1 @@
-git+git://github.com/GPflow/GPflow.git@1.5.0
+git+git://github.com/GPflow/GPflow.git@v1.5.0
