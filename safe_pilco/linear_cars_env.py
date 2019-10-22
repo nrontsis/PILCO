@@ -17,12 +17,16 @@ class LinearCars(Env):
 
         self.B = np.array([0,self.Dt/self.M, 0, 0]).reshape((4,1))
 
-        self.initial_state = np.array([-5.0, 1.0, -5.0, 1.0]).reshape((4,1))
+        self.initial_state = np.array([-6.0, 1.0, -5.0, 1.0]).reshape((4,1))
 
     def step(self, action):
         self.state += self.A @ self.state + self.B * action
                       #0.1 * np.random.normal(scale=[[1e-3], [1e-3], [1e-3], [0.001]], size=(4,1))
-        reward = 0
+
+        if self.state[0] < 0:
+            reward = -1
+        else:
+            reward = 1
         return np.reshape(self.state.copy(), (4,)), reward, False, None
 
     def reset(self):
