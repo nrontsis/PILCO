@@ -8,7 +8,7 @@ from pkg_resources import parse_version
 
 # Dependencies of PILCO
 requirements = [
-    'gpflow>=1.0'
+    'gpflow>=1.5.0'
 ]
 
 packages = find_packages('.')
@@ -24,7 +24,7 @@ setup(name='pilco',
       install_requires=requirements,
       include_package_data=True,
       test_suite='tests',
-      extras_require={'Tensorflow with GPU': ['tensorflow-gpu>=1.5']},
+      extras_require={'Tensorflow with GPU': ['tensorflow-gpu==1.13.1']},
       classifiers=[
           'License :: OSI Approved :: Apache Software License',
           'Natural Language :: English',
