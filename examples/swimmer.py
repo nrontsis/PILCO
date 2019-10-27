@@ -8,13 +8,9 @@ from pilco.rewards import ExponentialReward, LinearReward, CombinedRewards
 import tensorflow as tf
 from tensorflow import logging
 from pilco.utils import rollout, policy, reward_wrapper
-import sys
-
-# np.random.seed(int(sys.argv[1]))
-seed='1'
+np.random.seed(0)
 
 with tf.Session() as sess:
-    #np.random.seed(int(sys.argv[1]))
     init = tf.initialize_all_variables()
     sess.run(init)
     np.random.seed(int(seed))
@@ -79,7 +75,7 @@ with tf.Session() as sess:
     #    model.likelihood.variance = 0.0001
     #    model.likelihood.variance.trainable = False
 
-    Ret = np.zeros((N,20))
+    logging = False # To save results in .csv files turn this flag to True
     eval_runs = 10
     evaluation_returns_full = np.zeros((N, eval_runs))
     evaluation_returns_sampled = np.zeros((N, eval_runs))
@@ -90,7 +86,7 @@ with tf.Session() as sess:
         pilco.optimize_models(maxiter=5, restarts=2)
         pilco.optimize_policy(maxiter=5, restarts=2)
 
-        X_new, Y_new, _, _ = rollout(env, pilco, timesteps=T_sim, verbose=True, SUBS=SUBS, render=False)
+        X_new, Y_new, _, _ = rollout(env, pilco, timesteps=T_sim, verbose=True, SUBS=SUBS, render=True)
 
         cur_rew = 0
         for t in range(0,len(X_new)):

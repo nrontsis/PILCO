@@ -65,9 +65,9 @@ if __name__=='__main__':
         env = DoublePendWrapper()
 
         # Initial random rollouts to generate a dataset
-        X, Y, _, _ = rollout(env, None, timesteps=T, random=True, SUBS=SUBS)
+        X, Y, _, _ = rollout(env, None, timesteps=T, random=True, SUBS=SUBS, render=True)
         for i in range(1,J):
-            X_, Y_, _, _ = rollout(env, None, timesteps=T, random=True, SUBS=SUBS, verbose=True)
+            X_, Y_, _, _ = rollout(env, None, timesteps=T, random=True, SUBS=SUBS, verbose=True, render=True)
             X = np.vstack((X, X_))
             Y = np.vstack((Y, Y_))
 
@@ -92,7 +92,7 @@ if __name__=='__main__':
             pilco.optimize_models(maxiter=maxiter, restarts=2)
             pilco.optimize_policy(maxiter=maxiter, restarts=2)
 
-            X_new, Y_new, _, _ = rollout(env, pilco, timesteps=T_sim, verbose=True, SUBS=SUBS)
+            X_new, Y_new, _, _ = rollout(env, pilco, timesteps=T_sim, verbose=True, SUBS=SUBS, render=True)
 
             # Since we had decide on the various parameters of the reward function
             # we might want to verify that it behaves as expected by inspection

@@ -12,9 +12,9 @@ from pilco.utils import rollout, policy
 with tf.Session(graph=tf.Graph()) as sess:
     env = gym.make('InvertedPendulum-v2')
     # Initial random rollouts to generate a dataset
-    X,Y, _, _ = rollout(env=env, pilco=None, random=True, timesteps=40)
+    X,Y, _, _ = rollout(env=env, pilco=None, random=True, timesteps=40, render=True)
     for i in range(1,3):
-        X_, Y_, _, _ = rollout(env=env, pilco=None, random=True,  timesteps=40)
+        X_, Y_, _, _ = rollout(env=env, pilco=None, random=True,  timesteps=40, render=True)
         X = np.vstack((X, X_))
         Y = np.vstack((Y, Y_))
 
@@ -37,7 +37,7 @@ with tf.Session(graph=tf.Graph()) as sess:
         pilco.optimize_models()
         pilco.optimize_policy()
         import pdb; pdb.set_trace()
-        X_new, Y_new, _, _ = rollout(env=env, pilco=pilco, timesteps=100)
+        X_new, Y_new, _, _ = rollout(env=env, pilco=pilco, timesteps=100, render=True)
         print("No of ops:", len(tf.get_default_graph().get_operations()))
         # Update dataset
         X = np.vstack((X, X_new)); Y = np.vstack((Y, Y_new))

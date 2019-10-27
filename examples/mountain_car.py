@@ -14,9 +14,9 @@ T = 25
 with tf.Session(graph=tf.Graph()) as sess:
     env = gym.make('MountainCarContinuous-v0')
     # Initial random rollouts to generate a dataset
-    X1,Y1, _, _ = rollout(env=env, pilco=None, random=True, timesteps=T, SUBS=SUBS)
+    X1,Y1, _, _ = rollout(env=env, pilco=None, random=True, timesteps=T, SUBS=SUBS, render=True)
     for i in range(1,5):
-        X1_, Y1_,_,_ = rollout(env=env, pilco=None, random=True,  timesteps=T, SUBS=SUBS)
+        X1_, Y1_,_,_ = rollout(env=env, pilco=None, random=True,  timesteps=T, SUBS=SUBS, render=True)
         X1 = np.vstack((X1, X1_))
         Y1 = np.vstack((Y1, Y1_))
     env.close()
@@ -54,7 +54,7 @@ with tf.Session(graph=tf.Graph()) as sess:
         pilco.optimize_models()
         pilco.optimize_policy(maxiter=100, restarts=3)
         import pdb; pdb.set_trace()
-        X_new, Y_new,_,_ = rollout(env=env, pilco=pilco, timesteps=T, SUBS=SUBS)
+        X_new, Y_new,_,_ = rollout(env=env, pilco=pilco, timesteps=T, SUBS=SUBS, render=True)
         print("No of ops:", len(tf.get_default_graph().get_operations()))
 
         for i in range(len(X_new)):
