@@ -29,7 +29,7 @@ class DoublePendWrapper():
 
     def step(self, action):
         ob, r, done, _ = self.env.step(action)
-        if np.abs(ob[0])> 0.98 or np.abs(ob[-3]) > 0.1 or  np.abs(ob[-2]) > 0.1 or np.abs(ob[-1]) > 0.1:
+        if np.abs(ob[0])> 0.90 or np.abs(ob[-3]) > 0.15 or  np.abs(ob[-2]) > 0.15 or np.abs(ob[-1]) > 0.15:
             done = True
         return self.state_trans(ob), r, done, {}
 
@@ -41,69 +41,70 @@ class DoublePendWrapper():
         self.env.render()
 
 
-SUBS = 1
-bf = 40
-maxiter=80
-state_dim = 6
-control_dim = 1
-max_action=1.0 # actions for these environments are discrete
-target = np.zeros(state_dim)
-weights = 3.0 * np.eye(state_dim)
-weights[0,0] = 0.5
-weights[3,3] = 0.5
-m_init = np.zeros(state_dim)[None, :]
-S_init = 0.01 * np.eye(state_dim)
-T = 40
-J = 1
-N = 12
-T_sim = 130
-restarts=True
-lens = []
+if __name__=='__main__':
+    SUBS = 1
+    bf = 40
+    maxiter=100
+    state_dim = 6
+    control_dim = 1
+    max_action=1.0 # actions for these environments are discrete
+    target = np.zeros(state_dim)
+    weights = 5.0 * np.eye(state_dim)
+    weights[0,0] = 1.0
+    weights[3,3] = 1.0
+    m_init = np.zeros(state_dim)[None, :]
+    S_init = 0.005 * np.eye(state_dim)
+    T = 40
+    J = 5
+    N = 12
+    T_sim = 130
+    restarts=True
+    lens = []
 
-with tf.Session() as sess:
-    env = DoublePendWrapper()
+    with tf.Session() as sess:
+        env = DoublePendWrapper()
 
-    # Initial random rollouts to generate a dataset
-    X,Y = rollout(env, None, timesteps=T, random=True, SUBS=SUBS)
-    for i in range(1,J):
-        X_, Y_ = rollout(env, None, timesteps=T, random=True, SUBS=SUBS, verbose=True)
-        X = np.vstack((X, X_))
-        Y = np.vstack((Y, Y_))
+        # Initial random rollouts to generate a dataset
+        X, Y, _, _ = rollout(env, None, timesteps=T, random=True, SUBS=SUBS)
+        for i in range(1,J):
+            X_, Y_, _, _ = rollout(env, None, timesteps=T, random=True, SUBS=SUBS, verbose=True)
+            X = np.vstack((X, X_))
+            Y = np.vstack((Y, Y_))
 
-    state_dim = Y.shape[1]
-    control_dim = X.shape[1] - state_dim
+        state_dim = Y.shape[1]
+        control_dim = X.shape[1] - state_dim
 
-    controller = RbfController(state_dim=state_dim, control_dim=control_dim, num_basis_functions=bf, max_action=max_action)
+        controller = RbfController(state_dim=state_dim, control_dim=control_dim, num_basis_functions=bf, max_action=max_action)
 
-    R = ExponentialReward(state_dim=state_dim, t=target, W=weights)
+        R = ExponentialReward(state_dim=state_dim, t=target, W=weights)
 
-    pilco = PILCO(X, Y, controller=controller, horizon=T, reward=R, m_init=m_init, S_init=S_init)
+        pilco = PILCO(X, Y, controller=controller, horizon=T, reward=R, m_init=m_init, S_init=S_init)
 
-    # for numerical stability
-    for model in pilco.mgpr.models:
-        # model.kern.lengthscales.prior = gpflow.priors.Gamma(1,10) priors have to be included before
-        # model.kern.variance.prior = gpflow.priors.Gamma(1.5,2)    before the model gets compiled
-        model.likelihood.variance = 0.001
-        model.likelihood.variance.trainable = False
+        # for numerical stability
+        for model in pilco.mgpr.models:
+            # model.kern.lengthscales.prior = gpflow.priors.Gamma(1,10) # priors have to be included before
+            # model.kern.variance.prior = gpflow.priors.Gamma(1.5,2)    # before the model gets compiled
+            model.likelihood.variance = 0.001
+            model.likelihood.variance.trainable = False
 
-    for rollouts in range(N):
-        print("**** ITERATION no", rollouts, " ****")
-        pilco.optimize_models(maxiter=maxiter, restarts=2)
-        pilco.optimize_policy(maxiter=maxiter, restarts=2)
+        for rollouts in range(N):
+            print("**** ITERATION no", rollouts, " ****")
+            pilco.optimize_models(maxiter=maxiter, restarts=2)
+            pilco.optimize_policy(maxiter=maxiter, restarts=2)
 
-        X_new, Y_new = rollout(env, pilco, timesteps=T_sim, verbose=True, SUBS=SUBS)
+            X_new, Y_new, _, _ = rollout(env, pilco, timesteps=T_sim, verbose=True, SUBS=SUBS)
 
-        # Since we had decide on the various parameters of the reward function
-        # we might want to verify that it behaves as expected by inspection
-        # cur_rew = 0
-        # for t in range(0,len(X_new)):
-        #     cur_rew += reward_wrapper(R, X_new[t, 0:state_dim, None].transpose(), 0.0001 * np.eye(state_dim))[0]
-        # print('On this episode reward was ', cur_rew)
+            # Since we had decide on the various parameters of the reward function
+            # we might want to verify that it behaves as expected by inspection
+            # cur_rew = 0
+            # for t in range(0,len(X_new)):
+            #     cur_rew += reward_wrapper(R, X_new[t, 0:state_dim, None].transpose(), 0.0001 * np.eye(state_dim))[0]
+            # print('On this episode reward was ', cur_rew)
 
-        # Update dataset
-        X = np.vstack((X, X_new[:T, :])); Y = np.vstack((Y, Y_new[:T, :]))
-        pilco.mgpr.set_XY(X, Y)
+            # Update dataset
+            X = np.vstack((X, X_new[:T, :])); Y = np.vstack((Y, Y_new[:T, :]))
+            pilco.mgpr.set_XY(X, Y)
 
-        lens.append(len(X_new))
-        print(len(X_new))
-        if len(X_new) > 120: break
+            lens.append(len(X_new))
+            print(len(X_new))
+            if len(X_new) > 120: break

@@ -128,7 +128,6 @@ class PILCO(gpflow.models.Model):
                 tf.add(reward, self.reward.compute_reward(m_x, s_x)[0])
             ), loop_vars
         )
-
         return m_x, s_x, reward
 
     def propagate(self, m_x, s_x):

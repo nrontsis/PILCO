@@ -17,27 +17,6 @@ from tensorflow import logging
 int_type = settings.dtypes.int_type
 float_type = settings.dtypes.float_type
 
-# def rollout(policy, timesteps):
-#     X = []; Y = []
-#     x = env.reset()
-#     for timestep in range(timesteps):
-#         # env.render()
-#         u = policy(x)
-#         print("State ", x)
-#         print("Action ", u)
-#         x_new, _, done, _ = env.step(u)
-#         if done: break
-#         X.append(np.hstack((x, u)))
-#         Y.append(x_new - x)
-#         x = x_new
-#     return np.stack(X), np.stack(Y)
-
-# def random_policy(x):
-#     return env.action_space.sample()
-#
-# def pilco_policy(x):
-#     return pilco.compute_action(x[None, :])[0, :]
-
 
 class Normalised_Env():
     def __init__(self, m, std):
@@ -106,19 +85,20 @@ def safe_cars(name='', seed=0, logging=False):
         B = RiskOfCollision(2, [-bound_x1-env.m[0]/env.std[0], -bound_x2 - env.m[2]/env.std[2]],
                                [bound_x1 - env.m[0]/env.std[0], bound_x2 - env.m[2]/env.std[2]])
 
-        pilco = SafePILCO(X, Y, controller=controller, mu=-200.0, reward_add=R1, reward_mult=B, horizon=T, m_init=m_init, S_init=S_init)
+        pilco = SafePILCO(X, Y, controller=controller, mu=-300.0, reward_add=R1, reward_mult=B, horizon=T, m_init=m_init, S_init=S_init)
 
         # define tolerance
         new_data = True
         # init = tf.global_variables_initializer()
         evaluation_returns_full = np.zeros((N, eval_runs))
         evaluation_returns_sampled = np.zeros((N, eval_runs))
+        X_eval = []
         for rollouts in range(N):
             print("***ITERATION**** ", rollouts)
             if new_data:
-                pilco.optimize_models(maxiter=200, restarts=2)
+                pilco.optimize_models(maxiter=100, restarts=2)
                 new_data = False
-            pilco.optimize_policy(maxiter=10, restarts=2)
+            pilco.optimize_policy(maxiter=20, restarts=5)
             # check safety
             m_p = np.zeros((T, state_dim))
             S_p = np.zeros((T, state_dim, state_dim))
@@ -145,6 +125,22 @@ def safe_cars(name='', seed=0, logging=False):
                 pilco.mgpr.set_XY(X, Y)
                 if overall_risk < (th/4):
                     pilco.mu.mu.assign(0.75 * pilco.mu.mu.value)
+                if logging:
+                    for k in range(0, eval_runs):
+                        [X_eval_, _,
+                        evaluation_returns_sampled[rollouts, k],
+                        evaluation_returns_full[rollouts, k]] = rollout(env, pilco,
+                                                                       timesteps=T,
+                                                                       verbose=False, SUBS=1,
+                                                                       render=False)
+                        if len(X_eval)==0:
+                            X_eval = X_eval_.copy()
+                        else:
+                            X_eval = np.vstack((X_eval, X_eval_))
+                    np.savetxt("res/X_" + name + ".csv", X, delimiter=',')
+                    np.savetxt("res/X_eval_" + name + ".csv", X_eval, delimiter=',')
+                    np.savetxt("res/evaluation_returns_sampled_"  + name + ".csv", evaluation_returns_sampled, delimiter=',')
+                    np.savetxt("res/evaluation_returns_full_" + name + ".csv", evaluation_returns_full, delimiter=',')
             else:
                 X_new, Y_new,_,_ = rollout(env, pilco=pilco, timesteps=T, verbose=True, render=False)
                 print(m_p[:,0] - X_new[:,0])
@@ -157,19 +153,3 @@ def safe_cars(name='', seed=0, logging=False):
                 pilco.mu.mu.assign(1.5 * pilco.mu.mu.value, session=sess)
                 _, _, r = predict_trajectory_wrapper(pilco, m_init, S_init, T)
                 print(r)
-            if logging:
-                for k in range(0, eval_runs):
-                    [X_eval_, _,
-                    evaluation_returns_sampled[rollouts, k],
-                    evaluation_returns_full[rollouts, k]] = rollout(env, pilco,
-                                                                   timesteps=T,
-                                                                   verbose=False, SUBS=1,
-                                                                   render=False)
-                    if rollouts==0 and k==0:
-                        X_eval = X_eval_.copy()
-                    else:
-                        X_eval = np.vstack((X_eval, X_eval_))
-                np.savetxt("res/X_" + name + ".csv", X, delimiter=',')
-                np.savetxt("res/X_eval_" + name + ".csv", X_eval, delimiter=',')
-                np.savetxt("res/evaluation_returns_sampled_"  + name + ".csv", evaluation_returns_sampled, delimiter=',')
-                np.savetxt("res/evaluation_returns_full_" + name + ".csv", evaluation_returns_full, delimiter=',')

@@ -7,11 +7,15 @@ from rewards_safe import SingleConstraint
 import tensorflow as tf
 from tensorflow import logging
 from pilco.utils import rollout, policy, predict_trajectory_wrapper, reward_wrapper
-np.random.seed(0)
 
+np.random.seed(0)
+name = "safe_swimmer_final"
 # Uses a wrapper for the Swimmer
 # First one to use a combined reward function, that includes penalties
 # Uses the video capture function
+
+# np.random.seed(int(sys.argv[2]))
+# name = "safe_swimmer_final" + sys.argv[2]
 
 class SwimmerWrapper():
     def __init__(self):
@@ -35,7 +39,10 @@ class SwimmerWrapper():
     def render(self):
         self.env.render()
 
-
+# config = tf.ConfigProto()
+# gpu_id = sys.argv[1]
+# config.gpu_options.visible_device_list = gpu_id
+# config.gpu_options.per_process_gpu_memory_fraction = 0.95
 with tf.Session() as sess:
     env = SwimmerWrapper()
     state_dim = 9
@@ -45,7 +52,7 @@ with tf.Session() as sess:
     max_action = 1.0
     m_init = np.reshape(np.zeros(state_dim), (1,state_dim))  # initial state mean
     S_init = 0.05 * np.eye(state_dim)
-    J = 2
+    J = 10
     N = 12
     T = 25
     bf = 30
@@ -75,13 +82,13 @@ with tf.Session() as sess:
     C1 = SingleConstraint(1, low=-max_ang, high=max_ang, inside=False)
     C2 = SingleConstraint(2, low=-max_ang, high=max_ang, inside=False)
     C3 = SingleConstraint(3, low=-max_ang, high=max_ang, inside=False)
-    R = CombinedRewards(state_dim, [R1, C1, C2, C3], coefs=[1.0, -1.0, -1.0, -1.0])
+    R = CombinedRewards(state_dim, [R1, C1, C2, C3], coefs=[1.0, -10.0, -10.0, -10.0])
 
     th=0.2
     # Initial random rollouts to generate a dataset
-    X,Y = rollout(env, None, timesteps=T, random=True, SUBS=SUBS, verbose=True)
+    X,Y, _, _ = rollout(env, None, timesteps=T, random=True, SUBS=SUBS, verbose=True)
     for i in range(1,J):
-        X_, Y_ = rollout(env, None, timesteps=T, random=True, SUBS=SUBS, verbose=True)
+        X_, Y_ , _, _= rollout(env, None, timesteps=T, random=True, SUBS=SUBS, verbose=True)
         X = np.vstack((X, X_))
         Y = np.vstack((Y, Y_))
 
@@ -95,9 +102,13 @@ with tf.Session() as sess:
         # model.likelihood.variance.trainable = False
 
     new_data = True
+    eval_runs = T_sim
+    evaluation_returns_full = np.zeros((N, eval_runs))
+    evaluation_returns_sampled = np.zeros((N, eval_runs))
+    X_eval = []
     for rollouts in range(N):
         print("**** ITERATION no", rollouts, " ****")
-        if new_data: pilco.optimize_models(maxiter=maxiter); new_data = False
+        if new_data: pilco.optimize_models(maxiter=100); new_data = False
         pilco.optimize_policy(maxiter=maxiter, restarts=2)
 
         m_p = np.zeros((T, state_dim))
@@ -115,14 +126,14 @@ with tf.Session() as sess:
         estimate_risk2 = 1 - np.prod(1.0-predicted_risk2)
         estimate_risk3 = 1 - np.prod(1.0-predicted_risk3)
         overall_risk = 1 - (1 - estimate_risk1) * (1 - estimate_risk2) * (1 - estimate_risk3)
-        print(predicted_risk1)
-        print(estimate_risk1)
-        print(estimate_risk2)
-        print(estimate_risk3)
-        print("No of ops:", len(tf.get_default_graph().get_operations()))
-        import pdb; pdb.set_trace()
+        # print(predicted_risk1)
+        # print(estimate_risk1)
+        # print(estimate_risk2)
+        # print(estimate_risk3)
+        # print("No of ops:", len(tf.get_default_graph().get_operations()))
+        #import pdb; pdb.set_trace()
         if overall_risk < th:
-            X_new, Y_new = rollout(env, pilco, timesteps=T_sim, verbose=True, SUBS=SUBS)
+            X_new, Y_new, _, _ = rollout(env, pilco, timesteps=T_sim, verbose=True, SUBS=SUBS)
             new_data = True
             # Update dataset
             X = np.vstack((X, X_new[:T,:])); Y = np.vstack((Y, Y_new[:T,:]))
@@ -133,14 +144,30 @@ with tf.Session() as sess:
                 R.coefs.assign(R.coefs.value * [1.0, 1.0, 0.75, 1.0])
             if estimate_risk3 < th/10:
                 R.coefs.assign(R.coefs.value * [1.0, 1.0, 1.0, 0.75])
+            if logging:
+                for k in range(0, eval_runs):
+                    [X_eval_, _,
+                    evaluation_returns_sampled[rollouts, k],
+                    evaluation_returns_full[rollouts, k]] = rollout(env, pilco,
+                                                                   timesteps=T,
+                                                                   verbose=False, SUBS=1,
+                                                                   render=False)
+                    if len(X_eval)==0:
+                        X_eval = X_eval_.copy()
+                    else:
+                        X_eval = np.vstack((X_eval, X_eval_))
+                np.savetxt("res/X_" + name + ".csv", X, delimiter=',')
+                np.savetxt("res/X_eval_" + name + ".csv", X_eval, delimiter=',')
+                np.savetxt("res/evaluation_returns_sampled_"  + name + ".csv", evaluation_returns_sampled, delimiter=',')
+                np.savetxt("res/evaluation_returns_full_" + name + ".csv", evaluation_returns_full, delimiter=',')
         else:
             print("*********CHANGING***********")
-            X_2, Y_2 = rollout(env, pilco, timesteps=T_sim, verbose=True, SUBS=SUBS)
-            print(m_p)
-            print(S_p)
-            _, _, r = predict_trajectory_wrapper(pilco, m_init, S_init, T)
-            print("Before ", r)
-            print(R.coefs.value)
+            # X_2, Y_2, _, _ = rollout(env, pilco, timesteps=T_sim, verbose=True, SUBS=SUBS)
+            # print(m_p)
+            # print(S_p)
+            # _, _, r = predict_trajectory_wrapper(pilco, m_init, S_init, T)
+            # print("Before ", r)
+            # print(R.coefs.value)
             if estimate_risk1 > th/3:
                 R.coefs.assign(R.coefs.value * [1.0, 1.5, 1.0, 1.0])
             if estimate_risk2 > th/3:
@@ -148,8 +175,8 @@ with tf.Session() as sess:
             if estimate_risk3 > th/3:
                 R.coefs.assign(R.coefs.value * [1.0, 1.0, 1.0, 1.5])
             _, _, r = predict_trajectory_wrapper(pilco, m_init, S_init, T)
-            print("After ", r)
-            print(R.coefs.value)
+            # print("After ", r)
+            # print(R.coefs.value)
 
 
 
