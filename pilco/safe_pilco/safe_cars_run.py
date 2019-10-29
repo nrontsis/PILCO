@@ -153,3 +153,6 @@ def safe_cars(name='', seed=0, logging=False):
                 pilco.mu.mu.assign(1.5 * pilco.mu.mu.value, session=sess)
                 _, _, r = predict_trajectory_wrapper(pilco, m_init, S_init, T)
                 print(r)
+
+    if __name__=='__main__':
+        safe_cars()
