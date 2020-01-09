@@ -154,5 +154,5 @@ def safe_cars(name='', seed=0, logging=False):
                 _, _, r = predict_trajectory_wrapper(pilco, m_init, S_init, T)
                 print(r)
 
-    if __name__=='__main__':
-        safe_cars()
+if __name__=='__main__':
+    safe_cars()
