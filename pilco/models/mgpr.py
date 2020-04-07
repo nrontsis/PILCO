@@ -62,16 +62,19 @@ class MGPR(gpflow.Module):
                 "lengthscales" : model.kernel.lengthscales.value(),
                 "k_variance" : model.kernel.variance.value(),
                 "l_variance" : model.likelihood.variance.value()}
-            best_likelihood = model.log_marginal_likelihood()
+            #best_likelihood = model.log_marginal_likelihood()
+            best_loss = model.training_loss()
             for restart in range(restarts):
                 randomize(model)
                 optimizer.minimize(model.training_loss, model.trainable_variables)
-                likelihood = model.log_marginal_likelihood()
-                if likelihood > best_likelihood:
+                #likelihood = model.log_marginal_likelihood()
+                loss = model.training_loss()
+                if loss < best_loss:
                     best_params["k_lengthscales"] = model.kernel.lengthscales.value()
                     best_params["k_variance"] = model.kernel.variance.value()
                     best_params["l_variance"] = model.likelihood.variance.value()
-                    best_likelihood = likelihood
+                    #best_likelihood = likelihood
+                    best_loss = model.training_loss()
             model.kernel.lengthscales.assign(best_params["lengthscales"])
             model.kernel.variance.assign(best_params["k_variance"])
             model.likelihood.variance.assign(best_params["l_variance"])
