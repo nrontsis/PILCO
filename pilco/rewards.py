@@ -15,7 +15,6 @@ float_type = config.default_float()
 
 class ExponentialReward(Module):
     def __init__(self, state_dim, W=None, t=None):
-        Reward.__init__(self)
         self.state_dim = state_dim
         if W is not None:
             self.W = Parameter(np.reshape(W, (state_dim, state_dim)), trainable=False)
@@ -62,7 +61,6 @@ class ExponentialReward(Module):
 
 class LinearReward(Module):
     def __init__(self, state_dim, W):
-        Reward.__init__(self)
         self.state_dim = state_dim
         self.W = Parameter(np.reshape(W, (state_dim, 1)), trainable=False)
 
@@ -74,7 +72,6 @@ class LinearReward(Module):
 
 class CombinedRewards(Module):
     def __init__(self, state_dim, rewards=[], coefs=None):
-        Reward.__init__(self)
         self.state_dim = state_dim
         self.base_rewards = rewards
         if coefs is not None:
