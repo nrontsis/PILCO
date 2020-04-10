@@ -1,17 +1,15 @@
 from pilco.controllers import RbfController, LinearController, squash_sin
 import numpy as np
 import os
-from gpflow import autoflow
-from gpflow import settings
 import tensorflow as tf
 import oct2py
 octave = oct2py.Oct2Py()
 dir_path = os.path.dirname(os.path.realpath("__file__")) + "/tests/Matlab Code"
 octave.addpath(dir_path)
 
-float_type = settings.dtypes.float_type
+from gpflow import config
+float_type = config.default_float()
 
-@autoflow((float_type,[None, None]), (float_type,[None, None]))
 def compute_action_wrapper(controller, m, s, squash=False):
     return controller.compute_action(m, s, squash)
 
@@ -26,7 +24,7 @@ def test_rbf():
     A = np.random.rand(d, k)
     Y0 = np.sin(X0).dot(A) + 1e-3*(np.random.rand(100, k) - 0.5)  #  Just something smooth
     rbf = RbfController(3, 2, b)
-    rbf.set_XY(X0, Y0)
+    rbf.set_data((X0, Y0))
 
     # Generate input
     m = np.random.rand(1, d)  # But MATLAB defines it as m'
@@ -36,9 +34,9 @@ def test_rbf():
     M, S, V = compute_action_wrapper(rbf, m, s)
 
     # convert data to the struct expected by the MATLAB implementation
-    lengthscales = np.stack([model.kern.lengthscales.value for model in rbf.models])
-    variance = np.stack([model.kern.variance.value for model in rbf.models])
-    noise = np.stack([model.likelihood.variance.value for model in rbf.models])
+    lengthscales = np.stack([model.kernel.lengthscales.numpy() for model in rbf.models])
+    variance = np.stack([model.kernel.variance.numpy() for model in rbf.models])
+    noise = np.stack([model.likelihood.variance.numpy() for model in rbf.models])
 
     hyp = np.log(np.hstack(
         (lengthscales,
@@ -105,8 +103,6 @@ def test_squash():
     e = 7.0
 
     M, S, V = squash_sin(m, s, e)
-    sess = tf.Session()
-    M, S, V = sess.run([M, S, V])
 
     M_mat, S_mat, V_mat = octave.gSin(m.T, s, e, nout=3)
     M_mat = np.asarray(M_mat)

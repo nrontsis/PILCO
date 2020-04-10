@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 import gpflow
 from gpflow import Parameter
+from gpflow import set_trainable
 
 from .models import MGPR
 float_type = gpflow.config.default_float()
@@ -64,10 +65,10 @@ class LinearController(gpflow.Module):
 
 
 class FakeGPR(gpflow.Module):
-    def __init__(self, X, Y, kernel):
+    def __init__(self, data, kernel):
         gpflow.Module.__init__(self)
-        self.X = Parameter(X)
-        self.Y = Parameter(Y)
+        self.X = Parameter(data[0])
+        self.Y = Parameter(data[1])
         self.kernel = kernel
         self.likelihood = gpflow.likelihoods.Gaussian()
 
@@ -79,16 +80,16 @@ class RbfController(MGPR):
     '''
     def __init__(self, state_dim, control_dim, num_basis_functions, max_action=1.0):
         MGPR.__init__(self,
-            np.random.randn(num_basis_functions, state_dim),
-            0.1*np.random.randn(num_basis_functions, control_dim)
+            [np.random.randn(num_basis_functions, state_dim),
+            0.1*np.random.randn(num_basis_functions, control_dim)]
         )
         for model in self.models:
-            model.kernel.variance = 1.0
-            model.kernel.variance.trainable = False
+            model.kernel.variance.assign(1.0)
+            set_trainable(model.kernel.variance, False)
         self.max_action = max_action
 
     def create_models(self, data):
-        self.models = Parameters.ParamList([])
+        self.models = []
         for i in range(self.num_outputs):
             kernel = gpflow.kernels.SquaredExponential(lengthscales=tf.ones([data[0].shape[1],], dtype=float_type))
             self.models.append(FakeGPR(data, kernel))
