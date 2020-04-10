@@ -1,34 +1,31 @@
-import abc
+# from collections import abc
 import tensorflow as tf
-from gpflow import Parameterized, Param, params_as_tensors, settings
+from gpflow import Parameter, Module
 import numpy as np
 
-float_type = settings.dtypes.float_type
+from gpflow import config
+float_type = config.default_float()
 
 
-class Reward(Parameterized):
-    def __init__(self):
-        Parameterized.__init__(self)
-
-    @abc.abstractmethod
-    def compute_reward(self, m, s):
-        raise NotImplementedError
+# class Reward(Module):
+#     @abc.abstractmethod
+#     def compute_reward(self, m, s):
+#         raise NotImplementedError
 
 
-class ExponentialReward(Reward):
+class ExponentialReward(Module):
     def __init__(self, state_dim, W=None, t=None):
         Reward.__init__(self)
         self.state_dim = state_dim
         if W is not None:
-            self.W = Param(np.reshape(W, (state_dim, state_dim)), trainable=False)
+            self.W = Parameter(np.reshape(W, (state_dim, state_dim)), trainable=False)
         else:
-            self.W = Param(np.eye(state_dim), trainable=False)
+            self.W = Parameter(np.eye(state_dim), trainable=False)
         if t is not None:
-            self.t = Param(np.reshape(t, (1, state_dim)), trainable=False)
+            self.t = Parameter(np.reshape(t, (1, state_dim)), trainable=False)
         else:
-            self.t = Param(np.zeros((1, state_dim)), trainable=False)
+            self.t = Parameter(np.zeros((1, state_dim)), trainable=False)
 
-    @params_as_tensors
     def compute_reward(self, m, s):
         '''
         Reward function, calculating mean and variance of rewards, given
@@ -45,14 +42,14 @@ class ExponentialReward(Reward):
         SW = s @ self.W
 
         iSpW = tf.transpose(
-                tf.matrix_solve( (tf.eye(self.state_dim, dtype=float_type) + SW),
+                tf.linalg.solve( (tf.eye(self.state_dim, dtype=float_type) + SW),
                 tf.transpose(self.W), adjoint=True))
 
         muR = tf.exp(-(m-self.t) @  iSpW @ tf.transpose(m-self.t)/2) / \
                 tf.sqrt( tf.linalg.det(tf.eye(self.state_dim, dtype=float_type) + SW) )
 
         i2SpW = tf.transpose(
-                tf.matrix_solve( (tf.eye(self.state_dim, dtype=float_type) + 2*SW),
+                tf.linalg.solve( (tf.eye(self.state_dim, dtype=float_type) + 2*SW),
                 tf.transpose(self.W), adjoint=True))
 
         r2 =  tf.exp(-(m-self.t) @ i2SpW @ tf.transpose(m-self.t)) / \
@@ -63,32 +60,30 @@ class ExponentialReward(Reward):
         sR.set_shape([1, 1])
         return muR, sR
 
-class LinearReward(Reward):
+class LinearReward(Module):
     def __init__(self, state_dim, W):
         Reward.__init__(self)
         self.state_dim = state_dim
-        self.W = Param(np.reshape(W, (state_dim, 1)), trainable=False)
+        self.W = Parameter(np.reshape(W, (state_dim, 1)), trainable=False)
 
-    @params_as_tensors
     def compute_reward(self, m, s):
         muR = tf.reshape(m, (1, self.state_dim)) @ self.W
         sR = tf.transpose(self.W) @ s @ self.W
         return muR, sR
 
 
-class CombinedRewards(Reward):
+class CombinedRewards(Module):
     def __init__(self, state_dim, rewards=[], coefs=None):
         Reward.__init__(self)
         self.state_dim = state_dim
         self.base_rewards = rewards
         if coefs is not None:
-            self.coefs = Param(coefs, trainable=False)
+            self.coefs = Parameter(coefs, trainable=False)
             # self.coefs = tf.Variable(coefs, dtype=float_type, trainable=False)
         else:
-            self.coefs = Param(np.ones(len(rewards)), dtype=float_type, trainable=False)
+            self.coefs = Parameter(np.ones(len(rewards)), dtype=float_type, trainable=False)
             #self.coefs = tf.Variable(np.ones(len(rewards)), dtype=float_type, trainable=False)
 
-    @params_as_tensors
     def compute_reward(self, m, s):
         muR = 0
         sR = 0

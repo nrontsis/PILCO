@@ -1,10 +1,10 @@
 import tensorflow as tf
 import numpy as np
 import gpflow
+from gpflow import Parameter
 
 from .models import MGPR
-from gpflow import settings
-float_type = settings.dtypes.float_type
+float_type = gpflow.config.default_float()
 
 def squash_sin(m, s, max_action=None):
     '''
@@ -20,30 +20,29 @@ def squash_sin(m, s, max_action=None):
     else:
         max_action = max_action * tf.ones((1,k), dtype=float_type)
 
-    M = max_action * tf.exp(-tf.diag_part(s) / 2) * tf.sin(m)
+    M = max_action * tf.exp(-tf.linalg.diag_part(s) / 2) * tf.sin(m)
 
-    lq = -( tf.diag_part(s)[:, None] + tf.diag_part(s)[None, :]) / 2
+    lq = -( tf.linalg.diag_part(s)[:, None] + tf.linalg.diag_part(s)[None, :]) / 2
     q = tf.exp(lq)
     S = (tf.exp(lq + s) - q) * tf.cos(tf.transpose(m) - m) \
         - (tf.exp(lq - s) - q) * tf.cos(tf.transpose(m) + m)
     S = max_action * tf.transpose(max_action) * S / 2
 
-    C = max_action * tf.diag( tf.exp(-tf.diag_part(s)/2) * tf.cos(m))
+    C = max_action * tf.linalg.diag( tf.exp(-tf.linalg.diag_part(s)/2) * tf.cos(m))
     return M, S, tf.reshape(C,shape=[k,k])
 
 
-class LinearController(gpflow.Parameterized):
+class LinearController(gpflow.Module):
     def __init__(self, state_dim, control_dim, max_action=1.0, t=None):
-        gpflow.Parameterized.__init__(self)
-        self.W = gpflow.Param(np.random.rand(control_dim, state_dim))
-        self.b = gpflow.Param(np.random.rand(1, control_dim))
+        gpflow.Module.__init__(self)
+        self.W = Parameter(np.random.rand(control_dim, state_dim))
+        self.b = Parameter(np.random.rand(1, control_dim))
         if t is None:
             self.t = 0.0
         else:
             self.t = tf.constant(t, shape=[1, state_dim])
         self.max_action = max_action
 
-    @gpflow.params_as_tensors
     def compute_action(self, m, s, squash=True):
         '''
         Simple affine action:  M <- W(m-t) - b
@@ -64,12 +63,12 @@ class LinearController(gpflow.Parameterized):
         self.b.assign(mean + sigma*np.random.normal(size=self.b.shape))
 
 
-class FakeGPR(gpflow.Parameterized):
+class FakeGPR(gpflow.Module):
     def __init__(self, X, Y, kernel):
-        gpflow.Parameterized.__init__(self)
-        self.X = gpflow.Param(X)
-        self.Y = gpflow.Param(Y)
-        self.kern = kernel
+        gpflow.Module.__init__(self)
+        self.X = Parameter(X)
+        self.Y = Parameter(Y)
+        self.kernel = kernel
         self.likelihood = gpflow.likelihoods.Gaussian()
 
 class RbfController(MGPR):
@@ -84,15 +83,15 @@ class RbfController(MGPR):
             0.1*np.random.randn(num_basis_functions, control_dim)
         )
         for model in self.models:
-            model.kern.variance = 1.0
-            model.kern.variance.trainable = False
+            model.kernel.variance = 1.0
+            model.kernel.variance.trainable = False
         self.max_action = max_action
 
-    def create_models(self, X, Y):
-        self.models = gpflow.params.ParamList([])
+    def create_models(self, data):
+        self.models = Parameters.ParamList([])
         for i in range(self.num_outputs):
-            kern = gpflow.kernels.RBF(input_dim=X.shape[1], ARD=True)
-            self.models.append(FakeGPR(X, Y[:, i:i+1], kern))
+            kernel = gpflow.kernels.SquaredExponential(lengthscales=tf.ones([data[0].shape[1],], dtype=float_type))
+            self.models.append(FakeGPR(data, kernel))
 
     def compute_action(self, m, s, squash=True):
         '''
@@ -102,7 +101,7 @@ class RbfController(MGPR):
         '''
         iK, beta = self.calculate_factorizations()
         M, S, V = self.predict_given_factorizations(m, s, 0.0 * iK, beta)
-        S = S - tf.diag(self.variance - 1e-6)
+        S = S - tf.linalg.diag(self.variance - 1e-6)
         if squash:
             M, S, V2 = squash_sin(M, S, self.max_action)
             V = V @ V2
@@ -112,7 +111,7 @@ class RbfController(MGPR):
         print("Randomising controller")
         for m in self.models:
             mean = 0; sigma = 0.1
-            m.X.assign(mean + sigma * np.random.normal(size=m.X.shape))
-            m.Y.assign(mean + self.max_action * np.random.normal(size=m.Y.shape))
+            m.X.assign(mean + sigma * np.random.normal(size=m.data[0].shape))
+            m.Y.assign(mean + self.max_action * np.random.normal(size=m.data[1].shape))
             mean = 1; sigma = 0.1
-            m.kern.lengthscales.assign(mean + sigma*np.random.normal(size=m.kern.lengthscales.shape))
+            m.kernel.lengthscales.assign(mean + sigma*np.random.normal(size=m.kernel.lengthscales.shape))

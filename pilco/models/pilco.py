@@ -9,19 +9,19 @@ from .smgpr import SMGPR
 from .. import controllers
 from .. import rewards
 
-float_type = gpflow.settings.dtypes.float_type
+float_type = gpflow.config.default_float()
+from gpflow import set_trainable
 
-
-class PILCO(gpflow.models.Model):
-    def __init__(self, X, Y, num_induced_points=None, horizon=30, controller=None,
+class PILCO(gpflow.models.BayesianModel):
+    def __init__(self, data, num_induced_points=None, horizon=30, controller=None,
                 reward=None, m_init=None, S_init=None, name=None):
         super(PILCO, self).__init__(name)
         if not num_induced_points:
-            self.mgpr = MGPR(X, Y)
+            self.mgpr = MGPR(data)
         else:
-            self.mgpr = SMGPR(X, Y, num_induced_points)
-        self.state_dim = Y.shape[1]
-        self.control_dim = X.shape[1] - Y.shape[1]
+            self.mgpr = SMGPR(data, num_induced_points)
+        self.state_dim = data[1].shape[1]
+        self.control_dim = data[0].shape[1] - data[1].shape[1]
         self.horizon = horizon
 
         if controller is None:
@@ -37,18 +37,17 @@ class PILCO(gpflow.models.Model):
         if m_init is None or S_init is None:
             # If the user has not provided an initial state for the rollouts,
             # then define it as the first state in the dataset.
-            self.m_init = X[0:1, 0:self.state_dim]
+            self.m_init = data[0][0:1, 0:self.state_dim]
             self.S_init = np.diag(np.ones(self.state_dim) * 0.1)
         else:
             self.m_init = m_init
             self.S_init = S_init
         self.optimizer = None
 
-    @gpflow.name_scope('likelihood')
-    def _build_likelihood(self):
+    def training_loss(self):
         # This is for tuning controller's parameters
         reward = self.predict(self.m_init, self.S_init, self.horizon)[2]
-        return reward
+        return -reward
 
     def optimize_models(self, maxiter=200, restarts=1):
         '''
@@ -60,9 +59,9 @@ class PILCO(gpflow.models.Model):
         lengthscales = {}; variances = {}; noises = {};
         i = 0
         for model in self.mgpr.models:
-            lengthscales['GP' + str(i)] = model.kern.lengthscales.value
-            variances['GP' + str(i)] = np.array([model.kern.variance.value])
-            noises['GP' + str(i)] = np.array([model.likelihood.variance.value])
+            lengthscales['GP' + str(i)] = model.kernel.lengthscales.numpy()
+            variances['GP' + str(i)] = np.array([model.kernel.variance.numpy()])
+            noises['GP' + str(i)] = np.array([model.likelihood.variance.numpy()])
             i += 1
         print('-----Learned models------')
         pd.set_option('precision', 3)
@@ -78,35 +77,39 @@ class PILCO(gpflow.models.Model):
         Optimize controller's parameter's
         '''
         start = time.time()
+        mgpr_trainable_params = self.mgpr.trainable_parameters
+        for param in mgpr_trainable_params:
+            set_trainable(param, False)
+
         if not self.optimizer:
-            self.optimizer = gpflow.train.ScipyOptimizer(method="L-BFGS-B")
-            self.optimizer.minimize(self, maxiter=maxiter)
+            self.optimizer = gpflow.optimizers.Scipy()
+            self.optimizer.minimize(self.training_loss, self.trainable_variables, options=dict(maxiter=maxiter))
         else:
-            session = self.optimizer._model.enquire_session(None)
-            self.optimizer.minimize(self, maxiter=maxiter, session=session)
+            self.optimizer.minimize(self, maxiter=maxiter)
         end = time.time()
         print("Controller's optimization: done in %.1f seconds with reward=%.3f." % (end - start, self.compute_reward()))
         restarts -= 1
 
-        session = self.optimizer._model.enquire_session(None)
-        best_parameters = self.read_values(session=session)
+        best_parameter_values = [param.numpy() for param in self.trainable_parameters]
         best_reward = self.compute_reward()
         for restart in range(restarts):
             self.controller.randomize()
+            #print("Reward after randomization, before optimization: ", self.compute_reward())
             start = time.time()
-            self.optimizer.minimize(self, maxiter=maxiter, session=session)
+            self.optimizer.minimize(self.training_loss, self.trainable_variables, options=dict(maxiter=maxiter))
             end = time.time()
             reward = self.compute_reward()
             print("Controller's optimization: done in %.1f seconds with reward=%.3f." % (end - start, self.compute_reward()))
             if reward > best_reward:
-                best_parameters = self.read_values(session=session)
+                best_parameter_values = [param.numpy() for param in self.trainable_parameters]
                 best_reward = reward
 
-        self.assign(best_parameters)
-
+        for i,param in enumerate(self.trainable_variables):
+            param.assign(best_parameter_values[i])
         end = time.time()
+        for param in mgpr_trainable_params:
+            set_trainable(param, True)
 
-    @gpflow.autoflow((float_type,[None, None]))
     def compute_action(self, x_m):
         return self.controller.compute_action(x_m, tf.zeros([self.state_dim, self.state_dim], float_type))[0]
 
@@ -147,6 +150,9 @@ class PILCO(gpflow.models.Model):
         M_x.set_shape([1, self.state_dim]); S_x.set_shape([self.state_dim, self.state_dim])
         return M_x, S_x
 
-    @gpflow.autoflow()
     def compute_reward(self):
-        return self._build_likelihood()
+        return -self.training_loss()
+
+    @property
+    def maximum_log_likelihood_objective(self):
+        return -self.training_loss()
