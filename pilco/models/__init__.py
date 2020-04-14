@@ -1,3 +1,3 @@
 from .mgpr import MGPR
 from .smgpr import SMGPR
-# from .pilco import PILCO
+from .pilco import PILCO

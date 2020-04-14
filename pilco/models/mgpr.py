@@ -20,7 +20,6 @@ class MGPR(gpflow.Module):
     def __init__(self, data, name=None):
         super(MGPR, self).__init__(name)
 
-        self.data = data
         self.num_outputs = data[1].shape[1]
         self.num_dims = data[0].shape[1]
         self.num_datapoints = data[0].shape[0]
@@ -33,16 +32,19 @@ class MGPR(gpflow.Module):
         for i in range(self.num_outputs):
             kern = gpflow.kernels.SquaredExponential(lengthscales=tf.ones([data[0].shape[1],], dtype=float_type))
             #TODO: Maybe fix noise for better conditioning
-            #model.kernel.lengthscales.prior = tfd.Gamma(f64(1.0), f64(1.0))
-            kern.lengthscales.prior = tfd.Gamma(f64(1.0),f64(10.0)) # priors have to be included before
+            kern.lengthscales.prior = tfd.Gamma(f64(2.0),f64(10.0)) # priors have to be included before
             kern.variance.prior = tfd.Gamma(f64(1.5),f64(2.0))    # before the model gets compiled
             self.models.append(gpflow.models.GPR((data[0], data[1][:, i:i+1]), kernel=kern))
-            # self.models[i].clear(); self.models[i].compile()
+            self.models[-1].likelihood.prior = tfd.Gamma(f64(1.2),f64(0.1))
 
     def set_data(self, data):
-        self.data = data
         for i in range(len(self.models)):
-            self.models[i].data = (data[0], data[1][:, i:i+1])
+            if isinstance(self.models[i].data[0], gpflow.Parameter):
+                self.models[i].X.assign(data[0])
+                self.models[i].Y.assign(data[1][:, i:i+1])
+                self.models[i].data = [self.models[i].X, self.models[i].Y]
+            else:
+                self.models[i].data = (data[0], data[1][:, i:i+1])
 
     def optimize(self, restarts=1):
         if len(self.optimizers) == 0:  # This is the first call to optimize();
@@ -165,13 +167,13 @@ class MGPR(gpflow.Module):
     @property
     def Y(self):
         return tf.concat(
-            [model.Y.parameter_tensor for model in self.models],
+            [model.data[1] for model in self.models],
             axis = 1
         )
 
     @property
     def X(self):
-        return self.models[0].X.parameter_tensor
+        return self.models[0].data[0]
 
     @property
     def lengthscales(self):
@@ -192,9 +194,5 @@ class MGPR(gpflow.Module):
         )
 
     @property
-    def X(self):
-        return self.data[0]
-
-    @property
-    def Y(self):
-        return self.data[1]
+    def data(self):
+        return (self.X, self.Y)

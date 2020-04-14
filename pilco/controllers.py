@@ -67,8 +67,9 @@ class LinearController(gpflow.Module):
 class FakeGPR(gpflow.Module):
     def __init__(self, data, kernel):
         gpflow.Module.__init__(self)
-        self.X = Parameter(data[0])
-        self.Y = Parameter(data[1])
+        self.X = Parameter(data[0], name="DataX", dtype=gpflow.default_float())
+        self.Y = Parameter(data[1], name="DataY", dtype=gpflow.default_float())
+        self.data = [self.X, self.Y]
         self.kernel = kernel
         self.likelihood = gpflow.likelihoods.Gaussian()
 
@@ -92,7 +93,7 @@ class RbfController(MGPR):
         self.models = []
         for i in range(self.num_outputs):
             kernel = gpflow.kernels.SquaredExponential(lengthscales=tf.ones([data[0].shape[1],], dtype=float_type))
-            self.models.append(FakeGPR(data, kernel))
+            self.models.append(FakeGPR((data[0], data[1][:,i:i+1]), kernel))
 
     def compute_action(self, m, s, squash=True):
         '''

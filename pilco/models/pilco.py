@@ -16,7 +16,7 @@ class PILCO(gpflow.models.BayesianModel):
     def __init__(self, data, num_induced_points=None, horizon=30, controller=None,
                 reward=None, m_init=None, S_init=None, name=None):
         super(PILCO, self).__init__(name)
-        if not num_induced_points:
+        if num_induced_points is None:
             self.mgpr = MGPR(data)
         else:
             self.mgpr = SMGPR(data, num_induced_points)
@@ -85,7 +85,7 @@ class PILCO(gpflow.models.BayesianModel):
             self.optimizer = gpflow.optimizers.Scipy()
             self.optimizer.minimize(self.training_loss, self.trainable_variables, options=dict(maxiter=maxiter))
         else:
-            self.optimizer.minimize(self, maxiter=maxiter)
+            self.optimizer.minimize(self.training_loss, self.trainable_variables, options=dict(maxiter=maxiter))
         end = time.time()
         print("Controller's optimization: done in %.1f seconds with reward=%.3f." % (end - start, self.compute_reward()))
         restarts -= 1

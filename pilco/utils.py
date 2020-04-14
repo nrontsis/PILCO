@@ -1,7 +1,6 @@
 import numpy as np
-from gpflow import autoflow
-from gpflow import settings
-float_type = settings.dtypes.float_type
+from gpflow import config
+float_type = config.default_float()
 
 
 def rollout(env, pilco, timesteps, verbose=True, random=False, SUBS=1, render=False):
@@ -36,21 +35,17 @@ def policy(env, pilco, x, random):
         return pilco.compute_action(x[None, :])[0, :]
 
 
-@autoflow((float_type,[None, None]), (float_type,[None, None]))
 def predict_one_step_wrapper(mgpr, m, s):
     return mgpr.predict_on_noisy_inputs(m, s)
 
 
-@autoflow((float_type,[None, None]), (float_type,[None, None]), (np.int32, []))
 def predict_trajectory_wrapper(pilco, m, s, horizon):
     return pilco.predict(m, s, horizon)
 
 
-@autoflow((float_type,[None, None]), (float_type,[None, None]))
 def compute_action_wrapper(pilco, m, s):
     return pilco.controller.compute_action(m, s)
 
 
-@autoflow((float_type, [None, None]), (float_type, [None, None]))
 def reward_wrapper(reward, m, s):
     return reward.compute_reward(m, s)
