@@ -7,7 +7,7 @@ import tensorflow as tf
 #from tensorflow import logging
 np.random.seed(0)
 
-from pilco.utils import policy, reward_wrapper, predict_trajectory_wrapper, rollout
+from pilco.utils import policy, rollout
 
 class Normalised_Env():
     def __init__(self, env_id, m, std):
@@ -64,7 +64,7 @@ pilco = PILCO((X, Y), controller=controller, horizon=T, reward=R)
 best_r = 0
 all_Rs = np.zeros((X.shape[0], 1))
 for i in range(len(all_Rs)):
-    all_Rs[i,0] = reward_wrapper(R, X[i,None,:-1], 0.001 * np.eye(state_dim))[0]
+    all_Rs[i,0] = R.compute_reward(X[i,None,:-1], 0.001 * np.eye(state_dim))[0]
 
 ep_rewards = np.zeros((len(X)//T,1))
 
@@ -80,9 +80,9 @@ for rollouts in range(5):
     # print("No of ops:", len(tf.get_default_graph().get_operations()))
 
     for i in range(len(X_new)):
-            r_new[:, 0] = reward_wrapper(R, X_new[i,None,:-1], 0.001 * np.eye(state_dim))[0]
+            r_new[:, 0] = R.compute_reward(X_new[i,None,:-1], 0.001 * np.eye(state_dim))[0]
     total_r = sum(r_new)
-    _, _, r = predict_trajectory_wrapper(pilco, m_init, S_init, T)
+    _, _, r = pilco.predict(m_init, S_init, T)
 
     print("Total ", total_r, " Predicted: ", r)
     X = np.vstack((X, X_new)); Y = np.vstack((Y, Y_new));

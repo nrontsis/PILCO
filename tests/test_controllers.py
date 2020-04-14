@@ -10,9 +10,6 @@ octave.addpath(dir_path)
 from gpflow import config
 float_type = config.default_float()
 
-def compute_action_wrapper(controller, m, s, squash=False):
-    return controller.compute_action(m, s, squash)
-
 def test_rbf():
     np.random.seed(0)
     d = 3  # Input dimension
@@ -31,7 +28,7 @@ def test_rbf():
     s = np.random.rand(d, d)
     s = s.dot(s.T)  # Make s positive semidefinite
 
-    M, S, V = compute_action_wrapper(rbf, m, s)
+    M, S, V = rbf.compute_action(m, s, squash=False)
 
     # convert data to the struct expected by the MATLAB implementation
     lengthscales = np.stack([model.kernel.lengthscales.numpy() for model in rbf.models])
@@ -72,10 +69,10 @@ def test_linear():
     b = np.random.rand(1, k)
 
     linear = LinearController(d, k)
-    linear.W = W
-    linear.b = b
+    linear.W.assign(W)
+    linear.b.assign(b)
 
-    M, S, V = compute_action_wrapper(linear, m, s)
+    M, S, V = linear.compute_action(m, s, squash=False)
 
     # convert data to the struct expected by the MATLAB implementation
     policy = oct2py.io.Struct()

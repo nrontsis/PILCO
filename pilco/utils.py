@@ -33,19 +33,3 @@ def policy(env, pilco, x, random):
         return env.action_space.sample()
     else:
         return pilco.compute_action(x[None, :])[0, :]
-
-
-def predict_one_step_wrapper(mgpr, m, s):
-    return mgpr.predict_on_noisy_inputs(m, s)
-
-
-def predict_trajectory_wrapper(pilco, m, s, horizon):
-    return pilco.predict(m, s, horizon)
-
-
-def compute_action_wrapper(pilco, m, s):
-    return pilco.controller.compute_action(m, s)
-
-
-def reward_wrapper(reward, m, s):
-    return reward.compute_reward(m, s)

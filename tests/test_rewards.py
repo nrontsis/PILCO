@@ -9,8 +9,6 @@ octave.addpath(dir_path)
 from gpflow import config
 float_type = config.default_float()
 
-def reward_wrapper(reward, m, s):
-    return reward.compute_reward(m, s)
 
 def test_reward():
     '''
@@ -25,7 +23,7 @@ def test_reward():
     W = reward.W.numpy()
     t = reward.t.numpy()
 
-    M, S = reward_wrapper(reward, m, s)
+    M, S = reward.compute_reward(m, s)
 
     M_mat, _, _, S_mat = octave.reward(m.T, s, t.T, W, nout=4)
 

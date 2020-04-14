@@ -14,12 +14,6 @@ octave.addpath(dir_path)
 
 float_type = config.default_float()
 
-def predict_wrapper(pilco, m, s, horizon):
-    return pilco.predict(m, s, horizon)
-
-def compute_action_wrapper(pilco, m, s):
-    return pilco.controller.compute_action(m, s)
-
 def test_cascade():
     np.random.seed(0)
     d = 2  # State dimenstion
@@ -42,7 +36,7 @@ def test_cascade():
     s = np.random.rand(d, d)
     s = s.dot(s.T)  # Make s positive semidefinite
 
-    M, S, reward = predict_wrapper(pilco, m, s, horizon)
+    M, S, reward = pilco.predict(m, s, horizon)
 
     # convert data to the struct expected by the MATLAB implementation
     policy = oct2py.io.Struct()

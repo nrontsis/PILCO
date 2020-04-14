@@ -9,12 +9,6 @@ octave.addpath(dir_path)
 from gpflow import config
 float_type = config.default_float()
 
-def predict_wrapper(smgpr, m, s):
-    return smgpr.predict_on_noisy_inputs(m, s)
-
-def get_induced_points(smgpr):
-    return smgpr.Z.value().numpy()
-
 def test_sparse_predictions():
     np.random.seed(0)
     d = 3  # Input dimension
@@ -33,7 +27,7 @@ def test_sparse_predictions():
     s = np.random.rand(d, d)
     s = s.dot(s.T)  # Make s positive semidefinite
 
-    M, S, V = predict_wrapper(smgpr, m, s)
+    M, S, V = smgpr.predict_on_noisy_inputs(m, s)
 
     # convert data to the struct expected by the MATLAB implementation
     lengthscales = np.stack([model.kernel.lengthscales.value() for model in smgpr.models])
@@ -50,7 +44,7 @@ def test_sparse_predictions():
     gpmodel.hyp = hyp
     gpmodel.inputs = X0
     gpmodel.targets = Y0
-    gpmodel.induce = get_induced_points(smgpr)
+    gpmodel.induce = smgpr.Z.numpy()
 
     # Call function in octave
     M_mat, S_mat, V_mat = octave.gp1(gpmodel, m.T, s, nout=3)

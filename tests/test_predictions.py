@@ -9,8 +9,6 @@ octave.addpath(dir_path)
 from gpflow import config
 float_type = config.default_float()
 
-def predict_wrapper(mgpr, m, s):
-    return mgpr.predict_on_noisy_inputs(m, s)
 
 def test_predictions():
     np.random.seed(0)
@@ -30,13 +28,13 @@ def test_predictions():
     s = np.random.rand(d, d)
     s = s.dot(s.T)  # Make s positive semidefinite
 
-    M, S, V = predict_wrapper(mgpr, m, s)
+    M, S, V = mgpr.predict_on_noisy_inputs(m, s)
 
     # Change the dataset and predict again. Just to make sure that we don't cache something we shouldn't.
     X0 = 5*np.random.rand(100, d)
     mgpr.set_data((X0, Y0))
 
-    M, S, V = predict_wrapper(mgpr, m, s)
+    M, S, V = mgpr.predict_on_noisy_inputs(m, s)
 
     # convert data to the struct expected by the MATLAB implementation
     lengthscales = np.stack([model.kernel.lengthscales.value() for model in mgpr.models])

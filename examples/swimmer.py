@@ -6,8 +6,7 @@ from pilco.models import PILCO
 from pilco.controllers import RbfController, LinearController
 from pilco.rewards import ExponentialReward, LinearReward, CombinedRewards
 import tensorflow as tf
-from tensorflow import logging
-from pilco.utils import rollout, policy, reward_wrapper
+from pilco.utils import rollout, policy
 np.random.seed(0)
 
 with tf.Session() as sess:
@@ -16,11 +15,10 @@ with tf.Session() as sess:
     np.random.seed(int(seed))
     name = "swimmer_new" + seed
     env = gym.make('Swimmer-v2').env
-    #env = SwimmerWrapper()
     state_dim = 8
     control_dim = 2
     SUBS = 5
-    maxiter = 120
+    maxiter = 2
     max_action = 1.0
     m_init = np.reshape(np.zeros(state_dim), (1,state_dim))  # initial state mean
     S_init = 0.005 * np.eye(state_dim)
@@ -90,7 +88,7 @@ with tf.Session() as sess:
 
         cur_rew = 0
         for t in range(0,len(X_new)):
-            cur_rew += reward_wrapper(Rew, X_new[t, 0:state_dim, None].transpose(), 0.0001 * np.eye(state_dim))[0]
+            cur_rew += Rew.compute_reward(X_new[t, 0:state_dim, None].transpose(), 0.0001 * np.eye(state_dim))[0]
             if t == T: print('On this episode, on the planning horizon, PILCO reward was: ', cur_rew)
         print('On this episode PILCO reward was ', cur_rew)
 
