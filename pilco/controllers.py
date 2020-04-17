@@ -72,6 +72,8 @@ class FakeGPR(gpflow.Module):
         self.data = [self.X, self.Y]
         self.kernel = kernel
         self.likelihood = gpflow.likelihoods.Gaussian()
+        self.likelihood.variance.assign(0.0001)
+        set_trainable(self.likelihood.variance, False)
 
 class RbfController(MGPR):
     '''

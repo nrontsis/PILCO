@@ -32,10 +32,10 @@ class MGPR(gpflow.Module):
         for i in range(self.num_outputs):
             kern = gpflow.kernels.SquaredExponential(lengthscales=tf.ones([data[0].shape[1],], dtype=float_type))
             #TODO: Maybe fix noise for better conditioning
-            kern.lengthscales.prior = tfd.Gamma(f64(2.0),f64(10.0)) # priors have to be included before
-            kern.variance.prior = tfd.Gamma(f64(1.5),f64(2.0))    # before the model gets compiled
+            kern.lengthscales.prior = tfd.Gamma(f64(2.0),f64(1/4)) # priors have to be included before
+            kern.variance.prior = tfd.Gamma(f64(2.0),f64(1/0.4))    # before the model gets compiled
             self.models.append(gpflow.models.GPR((data[0], data[1][:, i:i+1]), kernel=kern))
-            self.models[-1].likelihood.prior = tfd.Gamma(f64(1.2),f64(0.1))
+            self.models[-1].likelihood.prior = tfd.Gamma(f64(1.2),f64(1/0.05))
 
     def set_data(self, data):
         for i in range(len(self.models)):
