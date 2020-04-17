@@ -65,9 +65,12 @@ class LinearController(gpflow.Module):
 
 
 class FakeGPR(gpflow.Module):
-    def __init__(self, data, kernel):
+    def __init__(self, data, kernel, X=None):
         gpflow.Module.__init__(self)
-        self.X = Parameter(data[0], name="DataX", dtype=gpflow.default_float())
+        if X is None:
+            self.X = Parameter(data[0], name="DataX", dtype=gpflow.default_float())
+        else:
+            self.X = X
         self.Y = Parameter(data[1], name="DataY", dtype=gpflow.default_float())
         self.data = [self.X, self.Y]
         self.kernel = kernel
@@ -95,7 +98,10 @@ class RbfController(MGPR):
         self.models = []
         for i in range(self.num_outputs):
             kernel = gpflow.kernels.SquaredExponential(lengthscales=tf.ones([data[0].shape[1],], dtype=float_type))
-            self.models.append(FakeGPR((data[0], data[1][:,i:i+1]), kernel))
+            if i == 0:
+                self.models.append(FakeGPR((data[0], data[1][:,i:i+1]), kernel))
+            else:
+                self.models.append(FakeGPR((data[0], data[1][:,i:i+1]), kernel, self.models[-1].X))
 
     def compute_action(self, m, s, squash=True):
         '''

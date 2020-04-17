@@ -83,9 +83,12 @@ class PILCO(gpflow.models.BayesianModel):
 
         if not self.optimizer:
             self.optimizer = gpflow.optimizers.Scipy()
+            # self.optimizer = tf.optimizers.Adam()
             self.optimizer.minimize(self.training_loss, self.trainable_variables, options=dict(maxiter=maxiter))
+            # self.optimizer.minimize(self.training_loss, self.trainable_variables)
         else:
             self.optimizer.minimize(self.training_loss, self.trainable_variables, options=dict(maxiter=maxiter))
+            # self.optimizer.minimize(self.training_loss, self.trainable_variables)
         end = time.time()
         print("Controller's optimization: done in %.1f seconds with reward=%.3f." % (end - start, self.compute_reward()))
         restarts -= 1
@@ -97,6 +100,7 @@ class PILCO(gpflow.models.BayesianModel):
             #print("Reward after randomization, before optimization: ", self.compute_reward())
             start = time.time()
             self.optimizer.minimize(self.training_loss, self.trainable_variables, options=dict(maxiter=maxiter))
+            # self.optimizer.minimize(self.training_loss, self.trainable_variables)
             end = time.time()
             reward = self.compute_reward()
             print("Controller's optimization: done in %.1f seconds with reward=%.3f." % (end - start, self.compute_reward()))
