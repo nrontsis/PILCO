@@ -120,8 +120,8 @@ class RbfController(MGPR):
     def randomize(self):
         print("Randomising controller")
         for m in self.models:
-            mean = 0; sigma = 0.1
+            mean = 0; sigma = 1.0
             m.X.assign(mean + sigma * np.random.normal(size=m.data[0].shape))
-            m.Y.assign(mean + self.max_action * np.random.normal(size=m.data[1].shape))
+            m.Y.assign(mean + 0.1 * self.max_action * np.random.normal(size=m.data[1].shape))
             mean = 1; sigma = 0.1
             m.kernel.lengthscales.assign(mean + sigma*np.random.normal(size=m.kernel.lengthscales.shape))

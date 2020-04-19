@@ -63,7 +63,6 @@ if __name__=='__main__':
     control_dim = X.shape[1] - state_dim
 
     controller = RbfController(state_dim=state_dim, control_dim=control_dim, num_basis_functions=bf, max_action=max_action)
-
     R = ExponentialReward(state_dim=state_dim, t=target, W=weights)
 
     pilco = PILCO((X, Y), controller=controller, horizon=T, reward=R, m_init=m_init, S_init=S_init)
@@ -73,6 +72,7 @@ if __name__=='__main__':
         model.likelihood.variance.assign(0.001)
         set_trainable(model.likelihood.variance, False)
 
+    r_new = np.zeros((T, 1))
     for rollouts in range(N):
         print("**** ITERATION no", rollouts, " ****")
         pilco.optimize_models(maxiter=maxiter, restarts=2)
@@ -82,10 +82,11 @@ if __name__=='__main__':
 
         # Since we had decide on the various parameters of the reward function
         # we might want to verify that it behaves as expected by inspection
-        # cur_rew = 0
-        # for t in range(0,len(X_new)):
-        #     cur_rew += reward_wrapper(R, X_new[t, 0:state_dim, None].transpose(), 0.0001 * np.eye(state_dim))[0]
-        # print('On this episode reward was ', cur_rew)
+        for i in range(len(X_new)):
+                r_new[:, 0] = R.compute_reward(X_new[i,None,:-1], 0.001 * np.eye(state_dim))[0]
+        total_r = sum(r_new)
+        _, _, r = pilco.predict(X_new[0,None,:-1], 0.001 * S_init, T)
+        print("Total ", total_r, " Predicted: ", r)
 
         # Update dataset
         X = np.vstack((X, X_new)); Y = np.vstack((Y, Y_new))

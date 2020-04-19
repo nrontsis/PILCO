@@ -108,7 +108,7 @@ class PILCO(gpflow.models.BayesianModel):
                 best_parameter_values = [param.numpy() for param in self.trainable_parameters]
                 best_reward = reward
 
-        for i,param in enumerate(self.trainable_variables):
+        for i,param in enumerate(self.trainable_parameters):
             param.assign(best_parameter_values[i])
         end = time.time()
         for param in mgpr_trainable_params:

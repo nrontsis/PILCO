@@ -51,7 +51,7 @@ Y = np.divide(Y1 , np.std(X1[:,:2], 0))
 state_dim = Y.shape[1]
 control_dim = X.shape[1] - state_dim
 m_init =  np.transpose(X[0,:-1,None])
-S_init =  np.eye(state_dim)
+S_init =  0.5 * np.eye(state_dim)
 controller = RbfController(state_dim=state_dim, control_dim=control_dim, num_basis_functions=25)
 # controller = LinearController(state_dim=state_dim, control_dim=control_dim)
 
@@ -59,7 +59,7 @@ R = ExponentialReward(state_dim=state_dim,
                       t=np.divide([0.5,0.0] - env.m, env.std),
                       W=np.diag([0.5,0.1])
                      )
-pilco = PILCO((X, Y), controller=controller, horizon=T, reward=R)
+pilco = PILCO((X, Y), controller=controller, horizon=T, reward=R, m_init=m_init, S_init=S_init)
 
 best_r = 0
 all_Rs = np.zeros((X.shape[0], 1))
