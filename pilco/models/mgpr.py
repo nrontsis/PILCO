@@ -32,7 +32,7 @@ class MGPR(gpflow.Module):
         for i in range(self.num_outputs):
             kern = gpflow.kernels.SquaredExponential(lengthscales=tf.ones([data[0].shape[1],], dtype=float_type))
             #TODO: Maybe fix noise for better conditioning
-            kern.lengthscales.prior = tfd.Gamma(f64(1.0),f64(1/10.0)) # priors have to be included before
+            kern.lengthscales.prior = tfd.Gamma(f64(1.1),f64(1/10.0)) # priors have to be included before
             kern.variance.prior = tfd.Gamma(f64(1.5),f64(1/2.0))    # before the model gets compiled
             self.models.append(gpflow.models.GPR((data[0], data[1][:, i:i+1]), kernel=kern))
             self.models[-1].likelihood.prior = tfd.Gamma(f64(1.2),f64(1/0.05))
@@ -89,10 +89,10 @@ class MGPR(gpflow.Module):
         K = self.K(self.X)
         batched_eye = tf.eye(tf.shape(self.X)[0], batch_shape=[self.num_outputs], dtype=float_type)
         L = tf.linalg.cholesky(K + self.noise[:, None, None]*batched_eye)
-        iK = tf.linalg.cholesky_solve(L, batched_eye)
+        iK = tf.linalg.cholesky_solve(L, batched_eye, name='chol1_calc_fact')
         Y_ = tf.transpose(self.Y)[:, :, None]
         # Why do we transpose Y? Maybe we need to change the definition of self.Y() or beta?
-        beta = tf.linalg.cholesky_solve(L, Y_)[:, :, 0]
+        beta = tf.linalg.cholesky_solve(L, Y_, name="chol2_calc_fact")[:, :, 0]
         return iK, beta
 
     def predict_given_factorizations(self, m, s, iK, beta):
@@ -113,9 +113,8 @@ class MGPR(gpflow.Module):
 
         # Redefine iN as in^T and t --> t^T
         # B is symmetric so its the same
-        #import pdb; pdb.set_trace()
         t = tf.linalg.matrix_transpose(
-                tf.compat.v1.matrix_solve(B, tf.linalg.matrix_transpose(iN)),
+                tf.linalg.solve(B, tf.linalg.matrix_transpose(iN), adjoint=True, name='predict_gf_t_calc'),
             )
 
         lb = tf.exp(-tf.reduce_sum(iN * t, -1)/2) * beta
@@ -134,7 +133,7 @@ class MGPR(gpflow.Module):
         # TODO: change this block according to the PR of tensorflow. Maybe move it into a function?
         X = inp[None, :, :, :]/tf.square(self.lengthscales[:, None, None, :])
         X2 = -inp[:, None, :, :]/tf.square(self.lengthscales[None, :, None, :])
-        Q = tf.linalg.solve(R, s)/2
+        Q = tf.linalg.solve(R, s, name='Q_solve')/2
         Xs = tf.reduce_sum(X @ Q * X, -1)
         X2s = tf.reduce_sum(X2 @ Q * X2, -1)
         maha = -2 * tf.matmul(X @ Q, X2, adjoint_b=True) + \

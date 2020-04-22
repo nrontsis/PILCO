@@ -1,8 +1,11 @@
 import tensorflow as tf
+from tensorflow_probability import distributions as tfd
 import numpy as np
 import gpflow
 from gpflow import Parameter
 from gpflow import set_trainable
+from gpflow.utilities import positive
+f64 = gpflow.utilities.to_default_float
 
 from .models import MGPR
 float_type = gpflow.config.default_float()
@@ -98,6 +101,9 @@ class RbfController(MGPR):
         self.models = []
         for i in range(self.num_outputs):
             kernel = gpflow.kernels.SquaredExponential(lengthscales=tf.ones([data[0].shape[1],], dtype=float_type))
+            transformed_lengthscales = Parameter(kernel.lengthscales, transform=positive(lower=1e-3))
+            kernel.lengthscales = transformed_lengthscales
+            kernel.lengthscales.prior = tfd.Gamma(f64(1.1),f64(1/10.0))
             if i == 0:
                 self.models.append(FakeGPR((data[0], data[1][:,i:i+1]), kernel))
             else:
@@ -109,9 +115,10 @@ class RbfController(MGPR):
         IN: mean (m) and variance (s) of the state
         OUT: mean (M) and variance (S) of the action
         '''
-        iK, beta = self.calculate_factorizations()
-        M, S, V = self.predict_given_factorizations(m, s, 0.0 * iK, beta)
-        S = S - tf.linalg.diag(self.variance - 1e-6)
+        with tf.name_scope("controller") as scope:
+            iK, beta = self.calculate_factorizations()
+            M, S, V = self.predict_given_factorizations(m, s, 0.0 * iK, beta)
+            S = S - tf.linalg.diag(self.variance - 1e-6)
         if squash:
             M, S, V2 = squash_sin(M, S, self.max_action)
             V = V @ V2

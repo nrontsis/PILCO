@@ -1,5 +1,6 @@
 import numpy as np
 from gpflow import config
+from gym import make
 float_type = config.default_float()
 
 
@@ -33,3 +34,25 @@ def policy(env, pilco, x, random):
         return env.action_space.sample()
     else:
         return pilco.compute_action(x[None, :])[0, :]
+
+class Normalised_Env():
+    def __init__(self, env_id, m, std):
+        self.env = make(env_id).env
+        self.action_space = self.env.action_space
+        self.observation_space = self.env.observation_space
+        self.m = m
+        self.std = std
+
+    def state_trans(self, x):
+        return np.divide(x-self.m, self.std)
+
+    def step(self, action):
+        ob, r, done, _ = self.env.step(action)
+        return self.state_trans(ob), r, done, {}
+
+    def reset(self):
+        ob =  self.env.reset()
+        return self.state_trans(ob)
+
+    def render(self):
+        self.env.render()
