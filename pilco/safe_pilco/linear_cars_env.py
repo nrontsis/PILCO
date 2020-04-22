@@ -27,8 +27,8 @@ class LinearCars(Env):
             reward = -1
         else:
             reward = 1
-        return np.reshape(self.state.copy(), (4,)), reward, False, None
+        return np.reshape(self.state[:], (4,)), reward, False, None
 
     def reset(self):
         self.state = self.initial_state + 0.03 * np.random.normal(size=(4,1))
-        return np.reshape(self.state.copy(), (4,))
+        return np.reshape(self.state[:], (4,))
