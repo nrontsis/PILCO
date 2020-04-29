@@ -37,14 +37,10 @@ def squash_sin(m, s, max_action=None):
 
 
 class LinearController(gpflow.Module):
-    def __init__(self, state_dim, control_dim, max_action=1.0, t=None):
+    def __init__(self, state_dim, control_dim, max_action=1.0):
         gpflow.Module.__init__(self)
         self.W = Parameter(np.random.rand(control_dim, state_dim))
         self.b = Parameter(np.random.rand(1, control_dim))
-        if t is None:
-            self.t = 0.0
-        else:
-            self.t = tf.constant(t, shape=[1, state_dim])
         self.max_action = max_action
 
     def compute_action(self, m, s, squash=True):
@@ -53,7 +49,7 @@ class LinearController(gpflow.Module):
         IN: mean (m) and variance (s) of the state
         OUT: mean (M) and variance (S) of the action
         '''
-        M = (m - self.t) @ tf.transpose(self.W) + self.b # mean output
+        M = m @ tf.transpose(self.W) + self.b # mean output
         S = self.W @ s @ tf.transpose(self.W) # output variance
         V = tf.transpose(self.W) #input output covariance
         if squash:
