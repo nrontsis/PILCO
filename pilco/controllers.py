@@ -68,7 +68,7 @@ class LinearController(gpflow.Module):
 
 
 class FakeGPR(gpflow.Module):
-    def __init__(self, data, kernel, X=None):
+    def __init__(self, data, kernel, X=None, likelihood_variance=1e-4):
         gpflow.Module.__init__(self)
         if X is None:
             self.X = Parameter(data[0], name="DataX", dtype=gpflow.default_float())
@@ -78,7 +78,7 @@ class FakeGPR(gpflow.Module):
         self.data = [self.X, self.Y]
         self.kernel = kernel
         self.likelihood = gpflow.likelihoods.Gaussian()
-        self.likelihood.variance.assign(0.0001)
+        self.likelihood.variance.assign(likelihood_variance)
         set_trainable(self.likelihood.variance, False)
 
 class RbfController(MGPR):
@@ -127,8 +127,7 @@ class RbfController(MGPR):
     def randomize(self):
         print("Randomising controller")
         for m in self.models:
-            mean = 0; sigma = 1.0
-            m.X.assign(mean + sigma * np.random.normal(size=m.data[0].shape))
-            m.Y.assign(mean + 0.1 * self.max_action * np.random.normal(size=m.data[1].shape))
+            m.X.assign(np.random.normal(size=m.data[0].shape))
+            m.Y.assign(self.max_action / 10 * np.random.normal(size=m.data[1].shape))
             mean = 1; sigma = 0.1
             m.kernel.lengthscales.assign(mean + sigma*np.random.normal(size=m.kernel.lengthscales.shape))

@@ -50,7 +50,3 @@ class SMGPR(MGPR):
     @property
     def Z(self):
         return self.models[0].inducing_variable.Z
-
-    # @property
-    # def log_marginal_likelihood(self):
-    #     return maximim_log_likelihood_objective

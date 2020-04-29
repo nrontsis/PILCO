@@ -1,16 +1,7 @@
-# from collections import abc
 import tensorflow as tf
-from gpflow import Parameter, Module
 import numpy as np
-
-from gpflow import config
+from gpflow import Parameter, Module, config
 float_type = config.default_float()
-
-
-# class Reward(Module):
-#     @abc.abstractmethod
-#     def compute_reward(self, m, s):
-#         raise NotImplementedError
 
 
 class ExponentialReward(Module):
@@ -76,16 +67,15 @@ class CombinedRewards(Module):
         self.base_rewards = rewards
         if coefs is not None:
             self.coefs = Parameter(coefs, trainable=False)
-            # self.coefs = tf.Variable(coefs, dtype=float_type, trainable=False)
         else:
             self.coefs = Parameter(np.ones(len(rewards)), dtype=float_type, trainable=False)
-            #self.coefs = tf.Variable(np.ones(len(rewards)), dtype=float_type, trainable=False)
 
     def compute_reward(self, m, s):
-        muR = 0
-        sR = 0
-        for c,r in enumerate(self.base_rewards):
-            tmp1, tmp2 = r.compute_reward(m, s)
-            muR += self.coefs[c] * tmp1
-            sR += self.coefs[c]**2 * tmp2
-        return muR, sR
+        total_output_mean = 0
+        total_output_covariance = 0
+        for reward, coef in zip(self.base_rewards, self.coefs):
+            output_mean, output_covariance = reward.compute_reward(m, s)
+            total_output_mean += coef * output_mean
+            total_output_covariance += coef**2 * output_covariance
+
+        return total_output_mean, total_output_covariance

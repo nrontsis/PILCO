@@ -43,10 +43,10 @@ class SingleConstraint(Module):
         else:
             self.inside = False
 
-        # Risk refers to the space between the low and high value -> 1
-        #otherwise self.in = 0
 
     def compute_reward(self, m, s):
+        # Risk refers to the space between the low and high value -> 1
+        # otherwise self.in = 0
         if not self.high:
             dist = tfd.Normal(loc=m[0, self.dim], scale=s[self.dim, self.dim])
             risk = 1 - dist.cdf(self.low)

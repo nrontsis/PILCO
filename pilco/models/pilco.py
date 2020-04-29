@@ -97,10 +97,8 @@ class PILCO(gpflow.models.BayesianModel):
         best_reward = self.compute_reward()
         for restart in range(restarts):
             self.controller.randomize()
-            #print("Reward after randomization, before optimization: ", self.compute_reward())
             start = time.time()
             self.optimizer.minimize(self.training_loss, self.trainable_variables, options=dict(maxiter=maxiter))
-            # self.optimizer.minimize(self.training_loss, self.trainable_variables)
             end = time.time()
             reward = self.compute_reward()
             print("Controller's optimization: done in %.1f seconds with reward=%.3f." % (end - start, self.compute_reward()))

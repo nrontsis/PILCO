@@ -1,13 +1,11 @@
 import tensorflow as tf
 from tensorflow_probability import distributions as tfd
 import gpflow
+from gpflow.utilities import to_default_float
 import numpy as np
 float_type = gpflow.config.default_float()
-f64 = gpflow.utilities.to_default_float
 
-def randomize(model):
-    mean = 1; sigma = 0.01
-
+def randomize(model, mean=1, sigma=0.01):
     model.kernel.lengthscales.assign(
         mean + sigma*np.random.normal(size=model.kernel.lengthscales.shape))
     model.kernel.variance.assign(
@@ -32,10 +30,10 @@ class MGPR(gpflow.Module):
         for i in range(self.num_outputs):
             kern = gpflow.kernels.SquaredExponential(lengthscales=tf.ones([data[0].shape[1],], dtype=float_type))
             #TODO: Maybe fix noise for better conditioning
-            kern.lengthscales.prior = tfd.Gamma(f64(1.1),f64(1/10.0)) # priors have to be included before
-            kern.variance.prior = tfd.Gamma(f64(1.5),f64(1/2.0))    # before the model gets compiled
+            kern.lengthscales.prior = tfd.Gamma(to_default_float(1.1), to_default_float(1/10.0)) # priors have to be included before
+            kern.variance.prior = tfd.Gamma(to_default_float(1.5), to_default_float(1/2.0))    # before the model gets compiled
             self.models.append(gpflow.models.GPR((data[0], data[1][:, i:i+1]), kernel=kern))
-            self.models[-1].likelihood.prior = tfd.Gamma(f64(1.2),f64(1/0.05))
+            self.models[-1].likelihood.prior = tfd.Gamma(to_default_float(1.2), to_default_float(1/0.05))
 
     def set_data(self, data):
         for i in range(len(self.models)):
@@ -55,27 +53,22 @@ class MGPR(gpflow.Module):
                 self.optimizers.append(optimizer)
         else:
             for model, optimizer in zip(self.models, self.optimizers):
-                #session = optimizer._model.enquire_session(None)
                 optimizer.minimize(model.training_loss, model.trainable_variables)
 
         for model, optimizer in zip(self.models, self.optimizers):
-            # session = optimizer._model.enquire_session(None)
             best_params = {
                 "lengthscales" : model.kernel.lengthscales.value(),
                 "k_variance" : model.kernel.variance.value(),
                 "l_variance" : model.likelihood.variance.value()}
-            #best_likelihood = model.log_marginal_likelihood()
             best_loss = model.training_loss()
             for restart in range(restarts):
                 randomize(model)
                 optimizer.minimize(model.training_loss, model.trainable_variables)
-                #likelihood = model.log_marginal_likelihood()
                 loss = model.training_loss()
                 if loss < best_loss:
                     best_params["k_lengthscales"] = model.kernel.lengthscales.value()
                     best_params["k_variance"] = model.kernel.variance.value()
                     best_params["l_variance"] = model.likelihood.variance.value()
-                    #best_likelihood = likelihood
                     best_loss = model.training_loss()
             model.kernel.lengthscales.assign(best_params["lengthscales"])
             model.kernel.variance.assign(best_params["k_variance"])
@@ -91,7 +84,7 @@ class MGPR(gpflow.Module):
         L = tf.linalg.cholesky(K + self.noise[:, None, None]*batched_eye)
         iK = tf.linalg.cholesky_solve(L, batched_eye, name='chol1_calc_fact')
         Y_ = tf.transpose(self.Y)[:, :, None]
-        # Why do we transpose Y? Maybe we need to change the definition of self.Y() or beta?
+        # TODO: Why do we transpose Y? Maybe we need to change the definition of self.Y() or beta?
         beta = tf.linalg.cholesky_solve(L, Y_, name="chol2_calc_fact")[:, :, 0]
         return iK, beta
 
@@ -138,7 +131,7 @@ class MGPR(gpflow.Module):
         X2s = tf.reduce_sum(X2 @ Q * X2, -1)
         maha = -2 * tf.matmul(X @ Q, X2, adjoint_b=True) + \
             Xs[:, :, :, None] + X2s[:, :, None, :]
-        #
+
         k = tf.math.log(self.variance)[:, None] - \
             tf.reduce_sum(tf.square(iN), -1)/2
         L = tf.exp(k[:, None, :, None] + k[None, :, None, :] + maha)
