@@ -4,7 +4,6 @@ from pilco.models import PILCO
 from pilco.controllers import RbfController, LinearController
 from pilco.rewards import ExponentialReward
 import tensorflow as tf
-#from tensorflow import logging
 np.random.seed(0)
 from pilco.utils import policy, rollout, Normalised_Env
 
@@ -31,7 +30,6 @@ control_dim = X.shape[1] - state_dim
 m_init =  np.transpose(X[0,:-1,None])
 S_init =  0.5 * np.eye(state_dim)
 controller = RbfController(state_dim=state_dim, control_dim=control_dim, num_basis_functions=25)
-# controller = LinearController(state_dim=state_dim, control_dim=control_dim)
 
 R = ExponentialReward(state_dim=state_dim,
                       t=np.divide([0.5,0.0] - env.m, env.std),
@@ -59,7 +57,6 @@ for rollouts in range(5):
     pilco.optimize_policy(maxiter=100, restarts=3)
     import pdb; pdb.set_trace()
     X_new, Y_new,_,_ = rollout(env=env, pilco=pilco, timesteps=T, SUBS=SUBS, render=True)
-    # print("No of ops:", len(tf.get_default_graph().get_operations()))
 
     for i in range(len(X_new)):
             r_new[:, 0] = R.compute_reward(X_new[i,None,:-1], 0.001 * np.eye(state_dim))[0]
