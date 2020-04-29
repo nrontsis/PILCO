@@ -40,7 +40,7 @@ class Normalised_Env():
         self.env.render()
 
 
-def safe_cars(name='', seed=0, logging=False):
+def safe_cars(seed=0):
     T = 25
     th = 0.10
     np.random.seed(seed)
@@ -126,22 +126,7 @@ def safe_cars(name='', seed=0, logging=False):
             pilco.mgpr.set_data((X, Y))
             if overall_risk < (th/4):
                 pilco.mu.assign(0.75 * pilco.mu.numpy())
-            if logging:
-                for k in range(0, eval_runs):
-                    [X_eval_, _,
-                    evaluation_returns_sampled[rollouts, k],
-                    evaluation_returns_full[rollouts, k]] = rollout(env, pilco,
-                                                                   timesteps=T,
-                                                                   verbose=False, SUBS=1,
-                                                                   render=False)
-                    if len(X_eval)==0:
-                        X_eval = X_eval_.copy()
-                    else:
-                        X_eval = np.vstack((X_eval, X_eval_))
-                np.savetxt("res/X_" + name + ".csv", X, delimiter=',')
-                np.savetxt("res/X_eval_" + name + ".csv", X_eval, delimiter=',')
-                np.savetxt("res/evaluation_returns_sampled_"  + name + ".csv", evaluation_returns_sampled, delimiter=',')
-                np.savetxt("res/evaluation_returns_full_" + name + ".csv", evaluation_returns_full, delimiter=',')
+
         else:
             X_new, Y_new,_,_ = rollout(env, pilco=pilco, timesteps=T, verbose=True, render=False)
             print(m_p[:,0] - X_new[:,0])

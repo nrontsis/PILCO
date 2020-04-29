@@ -6,30 +6,8 @@ from pilco.rewards import ExponentialReward
 import tensorflow as tf
 #from tensorflow import logging
 np.random.seed(0)
-
 from pilco.utils import policy, rollout, Normalised_Env
 
-# class Normalised_Env():
-#     def __init__(self, env_id, m, std):
-#         self.env = gym.make(env_id).env
-#         self.action_space = self.env.action_space
-#         self.observation_space = self.env.observation_space
-#         self.m = m
-#         self.std = std
-#
-#     def state_trans(self, x):
-#         return np.divide(x-self.m, self.std)
-#
-#     def step(self, action):
-#         ob, r, done, _ = self.env.step(action)
-#         return self.state_trans(ob), r, done, {}
-#
-#     def reset(self):
-#         ob =  self.env.reset()
-#         return self.state_trans(ob)
-#
-#     def render(self):
-#         self.env.render()
 
 SUBS = 5
 T = 25

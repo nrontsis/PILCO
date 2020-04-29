@@ -1,5 +1,4 @@
 import pilco
-# from pilco.rewards import ExponentialReward
 import tensorflow as tf
 import numpy as np
 from scipy.stats import mvn
@@ -72,36 +71,3 @@ class ObjectiveFunction(Module):
         reward, var = self.reward_f.compute_reward(m, s)
         risk, _ = self.risk_f.compute_reward(m, s)
         return reward - self.mu * risk, var
-
-
-# if __name__=='__main__':
-#     a = RiskOfCollision(2, [-10.0, -10.0], [10.0, 10.0])
-#     m = np.array([2.0, 1, 3.5, 1])[None,:]
-#     S = 2 * np.eye(4)
-#
-#     s = tf.Session()
-#     print(s.run(a.compute_reward(m, S)))
-#     r = ExponentialReward(4, W=np.eye(4), t=np.ones(4)[:,None])
-#     ob = ObjectiveFunction(r, a)
-#
-#     print(reward_wrapper(r, m, S))
-#     print(reward_wrapper(ob, m, S))
-#     ob.mu.assign(3.0)
-#     print(reward_wrapper(ob, m , S))
-#
-#     w1 = np.diag([0.2, 0.001, 0.2, 0.001])
-#     t1 = np.array([3.0, 1.0, 3.0, 1.0])
-#     R1 = ExponentialReward(state_dim=4, t=t1, W=w1)
-#
-#     w2 = np.diag([0.8, 0.0001, 0.8, 0.0001])
-#     t2 = np.array([0.0,10.0,0.0,10.0])
-#     R2 = ExponentialReward(4, W=w1, t=t1)
-#
-#     O = ObjectiveFunction(R1, R2, mu=5.0)
-#     #For Swimmer
-#     max_ang = 1.7453
-#     C1 = SingleConstraint(2, low=-max_ang, high=max_ang, inside=False)
-#     C2 = SingleConstraint(3, low=-max_ang, high=max_ang, inside=False)
-#     from pilco.rewards import CombinedRewards
-#     all = CombinedRewards(4, rewards=[R2, C1, C2], coefs=[1.0, -1.0, 2.0])
-#     print(reward_wrapper(all, m, S))
