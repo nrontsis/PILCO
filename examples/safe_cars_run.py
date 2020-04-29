@@ -9,7 +9,7 @@ from linear_cars_env import LinearCars
 
 from rewards_safe import RiskOfCollision, ObjectiveFunction
 from safe_pilco import SafePILCO
-from pilco.utils import rollout, policy
+from utils import rollout, policy
 
 from gpflow import config
 from gpflow import set_trainable

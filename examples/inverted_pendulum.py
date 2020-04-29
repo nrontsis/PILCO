@@ -8,7 +8,7 @@ from gpflow import set_trainable
 # from tensorflow import logging
 np.random.seed(0)
 
-from pilco.utils import rollout, policy
+from utils import rollout, policy
 
 env = gym.make('InvertedPendulum-v2')
 # Initial random rollouts to generate a dataset

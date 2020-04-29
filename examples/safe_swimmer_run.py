@@ -6,7 +6,7 @@ from pilco.rewards import ExponentialReward, LinearReward, CombinedRewards
 from rewards_safe import SingleConstraint
 import tensorflow as tf
 from tensorflow import logging
-from pilco.utils import rollout, policy, predict_trajectory_wrapper, reward_wrapper
+from utils import rollout, policy, predict_trajectory_wrapper, reward_wrapper
 
 
 # Uses a wrapper for the Swimmer

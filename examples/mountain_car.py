@@ -5,7 +5,7 @@ from pilco.controllers import RbfController, LinearController
 from pilco.rewards import ExponentialReward
 import tensorflow as tf
 np.random.seed(0)
-from pilco.utils import policy, rollout, Normalised_Env
+from utils import policy, rollout, Normalised_Env
 
 
 SUBS = 5
