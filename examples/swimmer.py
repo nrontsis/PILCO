@@ -1,5 +1,4 @@
 import os
-#os.environ["CUDA_VISIBLE_DEVICES"]="6"
 import numpy as np
 import gym
 from pilco.models import PILCO
@@ -26,33 +25,30 @@ bf = 40
 T_sim = 50
 
 # Reward function that dicourages the joints from hitting their max angles
-weights_l = np.zeros(state_dim)
-weights_l[3] = 1.0
 max_ang = 95 / 180 * np.pi
-t1 = np.zeros(state_dim)
-t1[2] = max_ang
-w1 = 1e-6 * np.eye(state_dim)
-w1[2,2] = 10
-t2 = np.zeros(state_dim)
-t2[1] = max_ang
-w2 = 1e-6 * np.eye(state_dim)
-w2[1,1] = 10
-t5 = np.zeros(state_dim)
-#t5[0] = max_ang
-#w3 = 1e-6 * np.eye(state_dim)
-#w3[0,0] = 5
-t3 = np.zeros(state_dim); t3[2] = -max_ang
-t4 = np.zeros(state_dim); t4[1] = -max_ang
-#t6 = np.zeros(state_dim); t6[0] = -max_ang
-R2 = LinearReward(state_dim, weights_l)
-R3 = ExponentialReward(state_dim, W=w1, t=t1)
-R4 = ExponentialReward(state_dim, W=w2, t=t2)
-R5 = ExponentialReward(state_dim, W=w1, t=t3)
-R6 = ExponentialReward(state_dim, W=w2, t=t4)
-#R7 = ExponentialReward(state_dim, W=w3, t=t5)
-#R8 = ExponentialReward(state_dim, W=w3, t=t6)
-Rew = CombinedRewards(state_dim, [R2, R3, R4, R5, R6], coefs=[1.0, -1.0, -1.0, -1.0, -1.0])
-# Rew = R2
+rewards = []
+rewards.append(LinearReward(state_dim, [0, 0, 0, 1.0, 0, 0, 0, 0]))
+rewards.append(ExponentialReward(
+    state_dim,
+    W=np.diag(np.array([0, 0, 10, 0, 0, 0, 0, 0]) + 1e-6),
+    t=[0, 0, max_ang, 0, 0, 0, 0, 0])
+)
+rewards.append(ExponentialReward(
+    state_dim,
+    W=np.diag(np.array([0, 0, 10, 0, 0, 0, 0, 0]) + 1e-6),
+    t=[0, 0, -max_ang, 0, 0, 0, 0, 0])
+)
+rewards.append(ExponentialReward(
+    state_dim,
+    W=np.diag(np.array([0, 10, 0, 0, 0, 0, 0, 0]) + 1e-6),
+    t=[0, max_ang, 0, 0, 0, 0, 0, 0])
+)
+rewards.append(ExponentialReward(
+    state_dim,
+    W=np.diag(np.array([0, 10, 0, 0, 0, 0, 0, 0]) + 1e-6),
+    t=[0, -max_ang, 0, 0, 0, 0, 0, 0])
+)
+combined_reward = CombinedRewards(state_dim, rewards, coefs=[1.0, -1.0, -1.0, -1.0, -1.0])
 # Initial random rollouts to generate a dataset
 X,Y, _, _ = rollout(env, None, timesteps=T, random=True, SUBS=SUBS, verbose=True, render=False)
 for i in range(1,J):
@@ -63,12 +59,8 @@ for i in range(1,J):
 state_dim = Y.shape[1]
 control_dim = X.shape[1] - state_dim
 controller = RbfController(state_dim=state_dim, control_dim=control_dim, num_basis_functions=bf, max_action=max_action)
-# controller = LinearController(state_dim=state_dim, control_dim=control_dim, max_action=max_action)
 
-pilco = PILCO((X, Y), controller=controller, horizon=T, reward=Rew, m_init=m_init, S_init=S_init)
-#for model in pilco.mgpr.models:
-#    model.likelihood.variance = 0.0001
-#    model.likelihood.variance.trainable = False
+pilco = PILCO((X, Y), controller=controller, horizon=T, reward=combined_reward, m_init=m_init, S_init=S_init)
 
 logging = False # To save results in .csv files turn this flag to True
 eval_runs = 10
@@ -113,7 +105,7 @@ for rollouts in range(N):
         np.savetxt("evaluation_returns_sampled_"  + name + seed + ".csv", evaluation_returns_sampled, delimiter=',')
         np.savetxt("evaluation_returns_full_" + name + seed+ ".csv", evaluation_returns_full, delimiter=',')
 
-    # Saving a video of a run
+    # To save a video of a run
     # env2 = SwimmerWrapper(monitor=True)
     # rollout(env2, pilco, policy=policy, timesteps=T+50, verbose=True, SUBS=SUBS)
     # env2.env.close()
