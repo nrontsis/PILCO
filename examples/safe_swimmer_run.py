@@ -3,11 +3,10 @@ import gym
 from pilco.models import PILCO
 from pilco.controllers import RbfController, LinearController
 from pilco.rewards import ExponentialReward, LinearReward, CombinedRewards
-from rewards_safe import SingleConstraint
+from safe_pilco_extension.rewards_safe import SingleConstraint
 import tensorflow as tf
-from tensorflow import logging
-from utils import rollout, policy, predict_trajectory_wrapper, reward_wrapper
-
+from utils import rollout, policy
+from gpflow import set_trainable
 
 # Uses a wrapper for the Swimmer
 # First one to use a combined reward function, that includes penalties
@@ -47,7 +46,7 @@ def safe_swimmer_run(seed=0, logging=False):
     max_action = 1.0
     m_init = np.reshape(np.zeros(state_dim), (1,state_dim))  # initial state mean
     S_init = 0.05 * np.eye(state_dim)
-    J = 10
+    J = 1
     N = 12
     T = 25
     bf = 30
@@ -76,10 +75,10 @@ def safe_swimmer_run(seed=0, logging=False):
     control_dim = X.shape[1] - state_dim
     controller = RbfController(state_dim=state_dim, control_dim=control_dim, num_basis_functions=bf, max_action=max_action)
 
-    pilco = PILCO(X, Y, controller=controller, horizon=T, reward=R, m_init=m_init, S_init=S_init)
+    pilco = PILCO((X, Y), controller=controller, horizon=T, reward=R, m_init=m_init, S_init=S_init)
     for model in pilco.mgpr.models:
         model.likelihood.variance.assign(0.001)
-        gpflow.set_trainable(model.likelihood.variance.trainable,False)
+        set_trainable(model.likelihood.variance, False)
 
     new_data = True
     eval_runs = T_sim
@@ -89,7 +88,7 @@ def safe_swimmer_run(seed=0, logging=False):
     for rollouts in range(N):
         print("**** ITERATION no", rollouts, " ****")
         if new_data: pilco.optimize_models(maxiter=100); new_data = False
-        pilco.optimize_policy(maxiter=maxiter, restarts=2)
+        pilco.optimize_policy(maxiter=1, restarts=2)
 
         m_p = np.zeros((T, state_dim))
         S_p = np.zeros((T, state_dim, state_dim))

@@ -7,8 +7,8 @@ from pilco.rewards import ExponentialReward, LinearReward
 
 from linear_cars_env import LinearCars
 
-from rewards_safe import RiskOfCollision, ObjectiveFunction
-from safe_pilco import SafePILCO
+from safe_pilco_extension.rewards_safe import RiskOfCollision, ObjectiveFunction
+from safe_pilco_extension.safe_pilco import SafePILCO
 from utils import rollout, policy
 
 from gpflow import config
@@ -44,7 +44,6 @@ def safe_cars(seed=0):
     T = 25
     th = 0.10
     np.random.seed(seed)
-    name = name
     J = 5
     N = 5
     eval_runs = 5
