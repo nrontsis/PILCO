@@ -2,25 +2,17 @@ from pilco.models import MGPR
 from pilco.models.pilco import PILCO
 import numpy as np
 import os
-from gpflow import autoflow
-from gpflow import settings
 import oct2py
 import logging
+from gpflow import config
+
 octave = oct2py.Oct2Py(logger=oct2py.get_log())
 octave.logger = oct2py.get_log('new_log')
 octave.logger.setLevel(logging.INFO)
 dir_path = os.path.dirname(os.path.realpath("__file__")) + "/tests/Matlab Code"
 octave.addpath(dir_path)
 
-float_type = settings.dtypes.float_type
-
-@autoflow((float_type,[None, None]), (float_type,[None, None]), (np.int32, []))
-def predict_wrapper(pilco, m, s, horizon):
-    return pilco.predict(m, s, horizon)
-
-@autoflow((float_type,[None, None]), (float_type,[None, None]))
-def compute_action_wrapper(pilco, m, s):
-    return pilco.controller.compute_action(m, s)
+float_type = config.default_float()
 
 def test_cascade():
     np.random.seed(0)
@@ -33,8 +25,9 @@ def test_cascade():
     X0 = np.random.rand(100, d + k)
     A = np.random.rand(d + k, d)
     Y0 = np.sin(X0).dot(A) + 1e-3*(np.random.rand(100, d) - 0.5)  #  Just something smooth
-    pilco = PILCO(X0, Y0)
+    pilco = PILCO((X0, Y0))
     pilco.controller.max_action = e
+
     pilco.optimize_models(restarts=5)
     pilco.optimize_policy(restarts=5)
 
@@ -43,19 +36,19 @@ def test_cascade():
     s = np.random.rand(d, d)
     s = s.dot(s.T)  # Make s positive semidefinite
 
-    M, S, reward = predict_wrapper(pilco, m, s, horizon)
+    M, S, reward = pilco.predict(m, s, horizon)
 
     # convert data to the struct expected by the MATLAB implementation
     policy = oct2py.io.Struct()
     policy.p = oct2py.io.Struct()
-    policy.p.w = pilco.controller.W.value
-    policy.p.b = pilco.controller.b.value.T
+    policy.p.w = pilco.controller.W.numpy()
+    policy.p.b = pilco.controller.b.numpy().T
     policy.maxU = e
 
     # convert data to the struct expected by the MATLAB implementation
-    lengthscales = np.stack([model.kern.lengthscales.value for model in pilco.mgpr.models])
-    variance = np.stack([model.kern.variance.value for model in pilco.mgpr.models])
-    noise = np.stack([model.likelihood.variance.value for model in pilco.mgpr.models])
+    lengthscales = np.stack([model.kernel.lengthscales.numpy() for model in pilco.mgpr.models])
+    variance = np.stack([model.kernel.variance.numpy() for model in pilco.mgpr.models])
+    noise = np.stack([model.likelihood.variance.numpy() for model in pilco.mgpr.models])
 
     hyp = np.log(np.hstack(
         (lengthscales,

@@ -1,18 +1,14 @@
 from pilco.rewards import ExponentialReward
 import numpy as np
 import os
-from gpflow import autoflow
-from gpflow import settings
 import oct2py
 octave = oct2py.Oct2Py()
 dir_path = os.path.dirname(os.path.realpath("__file__")) + "/tests/Matlab Code"
 octave.addpath(dir_path)
 
-float_type = settings.dtypes.float_type
+from gpflow import config
+float_type = config.default_float()
 
-@autoflow((float_type, [None, None]), (float_type, [None, None]))
-def reward_wrapper(reward, m, s):
-    return reward.compute_reward(m, s)
 
 def test_reward():
     '''
@@ -24,10 +20,10 @@ def test_reward():
     s = s.dot(s.T)
 
     reward = ExponentialReward(k)
-    W = reward.W.value
-    t = reward.t.value
+    W = reward.W.numpy()
+    t = reward.t.numpy()
 
-    M, S = reward_wrapper(reward, m, s)
+    M, S = reward.compute_reward(m, s)
 
     M_mat, _, _, S_mat = octave.reward(m.T, s, t.T, W, nout=4)
 

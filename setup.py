@@ -8,7 +8,7 @@ from pkg_resources import parse_version
 
 # Dependencies of PILCO
 requirements = [
-    'gpflow>=1.5.0'
+    'gpflow==2.0.0'
 ]
 
 packages = find_packages('.')
