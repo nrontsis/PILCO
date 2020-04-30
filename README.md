@@ -11,18 +11,14 @@ In particular, we use `TensorFlow v2` to avoid the need for hardcoded gradients 
 The core functionality is tested against the original `MATLAB` implementation.
 
 ## Example of usage
-Before using, or installing, PILCO, you need to have `Tensorflow v2` installed (either the gpu or the cpu version). It is recommended to install everything in a fresh `conda` environment with `python>=3.7`. Given `Tensorflow`, PILCO can be installed as follows
+Before using `PILCO` you have to install it by running:
 ```
 git clone https://github.com/nrontsis/PILCO && cd PILCO
 python setup.py develop
 ```
-Dependencies for the core functionalities can be installed by running:
-```
-pip install -r requirements.txt
-```
-However `mujoco_py`, which provides several of the environments in the examples, is not included and should be installed by following the instructions at [mujoco_py](https://github.com/openai/mujoco-py). 
+It is recommended to install everything in a fresh conda environment with `python>=3.7`
 
-The examples included in this repo use [`OpenAI gym 0.15.3`](https://github.com/openai/gym#installation) and [`mujoco-py 2.0.2.7`](https://github.com/openai/mujoco-py#install-mujoco). Once these dependencies are installed, you can run one of the examples as follows
+The examples included in this repo use [`OpenAI gym 0.15.3`](https://github.com/openai/gym#installation) and [`mujoco-py 2.0.2.7`](https://github.com/openai/mujoco-py#install-mujoco). Theses dependecies should be installed manually. Then, you can run one of the examples as follows
 ```
 python examples/inverted_pendulum.py
 ```
