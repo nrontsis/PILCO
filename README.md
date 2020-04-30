@@ -2,19 +2,13 @@
 [![Build Status](https://travis-ci.org/nrontsis/PILCO.svg?branch=master)](https://travis-ci.org/nrontsis/PILCO)
 [![codecov](https://codecov.io/gh/nrontsis/PILCO/branch/master/graph/badge.svg)](https://codecov.io/gh/nrontsis/PILCO)
 
-A modern \& clean implementation of the [PILCO](https://ieeexplore.ieee.org/abstract/document/6654139/) Algorithm in `TensorFlow`.
+A modern \& clean implementation of the [PILCO](https://ieeexplore.ieee.org/abstract/document/6654139/) Algorithm in `TensorFlow v2`.
 
 Unlike PILCO's [original implementation](http://mlg.eng.cam.ac.uk/pilco/) which was written as a self-contained package of `MATLAB`, this repository aims to provide a clean implementation by heavy use of modern machine learning libraries.
 
-In particular, we use `TensorFlow` to avoid the need for hardcoded gradients and scale to GPU architectures. Moreover, we use [`GPflow`](https://github.com/GPflow/GPflow) for Gaussian Process Regression.
+In particular, we use `TensorFlow v2` to avoid the need for hardcoded gradients and scale to GPU architectures. Moreover, we use [`GPflow v2`](https://github.com/GPflow/GPflow) for Gaussian Process Regression.
 
 The core functionality is tested against the original `MATLAB` implementation.
-
-## Update to `Tensorflow` 2.0+
-Updating to `Tensorflow` and (`gpflow`) 2.0 simplifies the codebase, making several wrapper functions unecessary, and allowing for easier prototyping with eager execution.
-
-## Safe PILCO extension
-We extend the standard PILCO algorithm to take safety constraints (defined on the environment's state space) into account as in [https://arxiv.org/abs/1712.05556](https://arxiv.org/pdf/1712.05556.pdf).
 
 ## Example of usage
 First install the package by running:
@@ -31,6 +25,9 @@ Then you can run the example of using PILCO in [`OpenAI gym`](https://gym.openai
 ```
 python examples/inverted_pendulum.py
 ```
+
+## Example Extension: Safe PILCO
+As an example of the extensibility of the framework, we include in the folder `safe_pilco_extension` an extension of the standard PILCO algorithm that takes safety constraints (defined on the environment's state space) into account as in [https://arxiv.org/abs/1712.05556](https://arxiv.org/pdf/1712.05556.pdf). The `safe_swimmer_run.py` and `safe_cars_run.py` in the `examples` folder demonstrate the use of this extension.
 
 ## Credits:
 
