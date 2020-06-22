@@ -4,6 +4,7 @@ from pilco.models import PILCO
 from pilco.controllers import RbfController, LinearController
 from pilco.rewards import ExponentialReward
 import tensorflow as tf
+from gpflow import set_trainable
 np.random.seed(0)
 from utils import policy, rollout, Normalised_Env
 
