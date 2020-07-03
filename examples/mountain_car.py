@@ -6,6 +6,7 @@ from pilco.rewards import ExponentialReward
 import tensorflow as tf
 np.random.seed(0)
 from utils import policy, rollout, Normalised_Env
+from gpflow.utilities import set_trainable
 
 
 SUBS = 5
