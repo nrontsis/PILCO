@@ -57,18 +57,18 @@ class MGPR(gpflow.Module):
 
         for model, optimizer in zip(self.models, self.optimizers):
             best_params = {
-                "lengthscales" : model.kernel.lengthscales.value(),
-                "k_variance" : model.kernel.variance.value(),
-                "l_variance" : model.likelihood.variance.value()}
+                "lengthscales" : model.kernel.lengthscales,
+                "k_variance" : model.kernel.variance,
+                "l_variance" : model.likelihood.variance}
             best_loss = model.training_loss()
             for restart in range(restarts):
                 randomize(model)
                 optimizer.minimize(model.training_loss, model.trainable_variables)
                 loss = model.training_loss()
                 if loss < best_loss:
-                    best_params["k_lengthscales"] = model.kernel.lengthscales.value()
-                    best_params["k_variance"] = model.kernel.variance.value()
-                    best_params["l_variance"] = model.likelihood.variance.value()
+                    best_params["k_lengthscales"] = model.kernel.lengthscales
+                    best_params["k_variance"] = model.kernel.variance
+                    best_params["l_variance"] = model.likelihood.variance
                     best_loss = model.training_loss()
             model.kernel.lengthscales.assign(best_params["lengthscales"])
             model.kernel.variance.assign(best_params["k_variance"])
@@ -170,19 +170,19 @@ class MGPR(gpflow.Module):
     @property
     def lengthscales(self):
         return tf.stack(
-            [model.kernel.lengthscales.value() for model in self.models]
+            [model.kernel.lengthscales for model in self.models]
         )
 
     @property
     def variance(self):
         return tf.stack(
-            [model.kernel.variance.value() for model in self.models]
+            [model.kernel.variance for model in self.models]
         )
 
     @property
     def noise(self):
         return tf.stack(
-            [model.likelihood.variance.value() for model in self.models]
+            [model.likelihood.variance for model in self.models]
         )
 
     @property
