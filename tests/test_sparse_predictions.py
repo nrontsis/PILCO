@@ -30,9 +30,9 @@ def test_sparse_predictions():
     M, S, V = smgpr.predict_on_noisy_inputs(m, s)
 
     # convert data to the struct expected by the MATLAB implementation
-    lengthscales = np.stack([model.kernel.lengthscales.value() for model in smgpr.models])
-    variance = np.stack([model.kernel.variance.value() for model in smgpr.models])
-    noise = np.stack([model.likelihood.variance.value() for model in smgpr.models])
+    lengthscales = np.stack([model.kernel.lengthscales for model in smgpr.models])
+    variance = np.stack([model.kernel.variance for model in smgpr.models])
+    noise = np.stack([model.likelihood.variance for model in smgpr.models])
 
     hyp = np.log(np.hstack(
         (lengthscales,
