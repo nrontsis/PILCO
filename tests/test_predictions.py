@@ -37,9 +37,9 @@ def test_predictions():
     M, S, V = mgpr.predict_on_noisy_inputs(m, s)
 
     # convert data to the struct expected by the MATLAB implementation
-    lengthscales = np.stack([model.kernel.lengthscales.value() for model in mgpr.models])
-    variance = np.stack([model.kernel.variance.value() for model in mgpr.models])
-    noise = np.stack([model.likelihood.variance.value() for model in mgpr.models])
+    lengthscales = np.stack([model.kernel.lengthscales for model in mgpr.models])
+    variance = np.stack([model.kernel.variance for model in mgpr.models])
+    noise = np.stack([model.likelihood.variance for model in mgpr.models])
 
     hyp = np.log(np.hstack(
         (lengthscales,
