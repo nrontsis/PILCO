@@ -13,9 +13,18 @@ float_type = gpflow.config.default_float()
 from gpflow import set_trainable
 
 class PILCO(gpflow.models.BayesianModel):
-    def __init__(self, data, num_induced_points=None, horizon=30, controller=None,
-                reward=None, m_init=None, S_init=None, name=None):
-        super(PILCO, self).__init__(name)
+    def __init__(
+            self,
+            data,
+            num_induced_points=None,
+            horizon=30,
+            controller=None,
+            reward=None,
+            m_init=None,
+            S_init=None,
+            name=None,
+    ):
+        super().__init__(name)
         if num_induced_points is None:
             self.mgpr = MGPR(data)
         else:
@@ -90,7 +99,7 @@ class PILCO(gpflow.models.BayesianModel):
             self.optimizer.minimize(self.training_loss, self.trainable_variables, options=dict(maxiter=maxiter))
             # self.optimizer.minimize(self.training_loss, self.trainable_variables)
         end = time.time()
-        print("Controller's optimization: done in %.1f seconds with reward=%.3f." % (end - start, self.compute_reward()))
+        print(f"Controller's optimization: done in {end - start:.1f} seconds with reward={self.compute_reward():.3f}.")
         restarts -= 1
 
         best_parameter_values = [param.numpy() for param in self.trainable_parameters]
@@ -101,7 +110,7 @@ class PILCO(gpflow.models.BayesianModel):
             self.optimizer.minimize(self.training_loss, self.trainable_variables, options=dict(maxiter=maxiter))
             end = time.time()
             reward = self.compute_reward()
-            print("Controller's optimization: done in %.1f seconds with reward=%.3f." % (end - start, self.compute_reward()))
+            print(f"Controller's optimization: done in {end - start:.1f} seconds with reward={self.compute_reward():.3f}.")
             if reward > best_reward:
                 best_parameter_values = [param.numpy() for param in self.trainable_parameters]
                 best_reward = reward

@@ -16,7 +16,7 @@ def randomize(model, mean=1, sigma=0.01):
 
 class MGPR(gpflow.Module):
     def __init__(self, data, name=None):
-        super(MGPR, self).__init__(name)
+        super().__init__(name)
 
         self.num_outputs = data[1].shape[1]
         self.num_dims = data[0].shape[1]
