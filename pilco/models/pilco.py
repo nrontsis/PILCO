@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import numpy as np
 import tensorflow as tf
 import gpflow
@@ -13,7 +15,7 @@ float_type = gpflow.config.default_float()
 from gpflow import set_trainable
 
 class PILCO(gpflow.models.BayesianModel):
-    def __init__(self, data, num_induced_points=None, horizon=30, controller=None,
+    def __init__(self, data: Tuple, num_induced_points=None, horizon=30, controller=None,
                 reward=None, m_init=None, S_init=None, name=None):
         super(PILCO, self).__init__(name)
         if num_induced_points is None:
@@ -113,9 +115,19 @@ class PILCO(gpflow.models.BayesianModel):
             set_trainable(param, True)
 
     def compute_action(self, x_m):
+        """Computes action for a real interaction with environment.
+
+        Unlike in approximate inference, we don't have any uncertainty about the state,
+        therefore covariance is set to zero."""
+
         return self.controller.compute_action(x_m, tf.zeros([self.state_dim, self.state_dim], float_type))[0]
 
     def predict(self, m_x, s_x, n):
+        """Do approximate inference for n time steps into the future.
+
+        Returns the distribution over the state after n steps (mean and sigma),
+        and the total reward."""
+
         loop_vars = [
             tf.constant(0, tf.int32),
             m_x,
@@ -138,6 +150,7 @@ class PILCO(gpflow.models.BayesianModel):
     def propagate(self, m_x, s_x):
         m_u, s_u, c_xu = self.controller.compute_action(m_x, s_x)
 
+        # find mean, sigma for the concatenated vector of state and action (x~ in the paper)
         m = tf.concat([m_x, m_u], axis=1)
         s1 = tf.concat([s_x, s_x@c_xu], axis=1)
         s2 = tf.concat([tf.transpose(s_x@c_xu), s_u], axis=1)
