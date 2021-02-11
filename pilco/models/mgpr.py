@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import tensorflow as tf
 from tensorflow_probability import distributions as tfd
 import gpflow
@@ -5,7 +7,7 @@ from gpflow.utilities import to_default_float
 import numpy as np
 float_type = gpflow.config.default_float()
 
-def randomize(model, mean=1, sigma=0.01):
+def randomize(model: gpflow.models.GPR, mean=1, sigma=0.01):
     model.kernel.lengthscales.assign(
         mean + sigma*np.random.normal(size=model.kernel.lengthscales.shape))
     model.kernel.variance.assign(
@@ -15,6 +17,7 @@ def randomize(model, mean=1, sigma=0.01):
             mean + sigma*np.random.normal())
 
 class MGPR(gpflow.Module):
+    """Multivariate Gaussian Process Regression"""
     def __init__(self, data, name=None):
         super(MGPR, self).__init__(name)
 
@@ -35,7 +38,7 @@ class MGPR(gpflow.Module):
             self.models.append(gpflow.models.GPR((data[0], data[1][:, i:i+1]), kernel=kern))
             self.models[-1].likelihood.prior = tfd.Gamma(to_default_float(1.2), to_default_float(1/0.05))
 
-    def set_data(self, data):
+    def set_data(self, data: Tuple):
         for i in range(len(self.models)):
             if isinstance(self.models[i].data[0], gpflow.Parameter):
                 self.models[i].X.assign(data[0])
@@ -75,10 +78,12 @@ class MGPR(gpflow.Module):
             model.likelihood.variance.assign(best_params["l_variance"])
 
     def predict_on_noisy_inputs(self, m, s):
+        """Apply the learned model of the environment to predict the change of the state."""
         iK, beta = self.calculate_factorizations()
         return self.predict_given_factorizations(m, s, iK, beta)
 
     def calculate_factorizations(self):
+        """TODO document me"""
         K = self.K(self.X)
         batched_eye = tf.eye(tf.shape(self.X)[0], batch_shape=[self.num_outputs], dtype=float_type)
         L = tf.linalg.cholesky(K + self.noise[:, None, None]*batched_eye)
