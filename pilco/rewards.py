@@ -16,6 +16,7 @@ class ExponentialReward(Module):
         else:
             self.t = Parameter(np.zeros((1, state_dim)), trainable=False)
 
+    @tf.function
     def compute_reward(self, m, s):
         '''
         Reward function, calculating mean and variance of rewards, given

@@ -115,6 +115,7 @@ class PILCO(gpflow.models.BayesianModel):
     def compute_action(self, x_m):
         return self.controller.compute_action(x_m, tf.zeros([self.state_dim, self.state_dim], float_type))[0]
 
+    @tf.function
     def predict(self, m_x, s_x, n):
         loop_vars = [
             tf.constant(0, tf.int32),
